@@ -1,0 +1,332 @@
+local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+
+-- Настройки темы
+WindUI.TransparencyValue = 0.15
+WindUI:SetTheme("Dark")
+
+-- Цветовая палитра
+local COLOR_PALETTE = {
+    Primary = Color3.fromHex("#24ffed"),
+    Secondary = Color3.fromHex("#000c63"),
+    Accent = Color3.fromHex("#30ff6a"),
+    Dark = Color3.fromHex("#0a0a1a"),
+    Text = Color3.fromHex("#e0e0ff"),
+    Danger = Color3.fromHex("#ff3e3e")
+}
+
+-- Функция градиента
+local function gradient(text, startColor, endColor)
+    local result = ""
+    for i = 1, #text do
+        local t = (i - 1) / (#text - 1)
+        local r = math.floor((startColor.R + (endColor.R - startColor.R) * t) * 255)
+        local g = math.floor((startColor.G + (endColor.G - startColor.G) * t) * 255)
+        local b = math.floor((startColor.B + (endColor.B - startColor.B) * t) * 255)
+        result = result .. string.format('<font color="rgb(%d,%d,%d)">%s</font>', r, g, b, text:sub(i, i))
+    end
+    return result
+end
+
+-- Создание окна
+local Window = WindUI:CreateWindow({
+    Title = gradient("SNT HUB", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Icon = "infinity",
+    Author = gradient("99 Nights in the Forest", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Folder = "SNT_HUB",
+    Size = UDim2.fromOffset(400, 180), -- Увеличенный размер
+    Theme = "Dark",
+    Background = WindUI:Gradient({
+        ["0"] = { Color = COLOR_PALETTE.Dark, Transparency = 0 },
+        ["50"] = { Color = COLOR_PALETTE.Secondary, Transparency = 0 },
+        ["100"] = { Color = Color3.fromHex("#000000"), Transparency = 0 },
+    }, {
+        Rotation = 150,
+    }),
+    User = {
+        Enabled = true,
+        Anonymous = false,
+        Username = "Snowt_Scripter",
+        UserTag = "@Snowt_Scripter",
+        Callback = function()
+            WindUI:Notify({
+                Title = "User Profile",
+                Content = "Telegram: @Snowt_TG",
+                Duration = 3
+            })
+        end
+    },
+    SideBarWidth = 200,
+    ScrollBarEnabled = true,
+    CornerRadius = UDim.new(0, 14),
+    DropShadow = true
+})
+
+-- Секции
+local Tabs = {
+    Main = Window:Section({ 
+        Title = gradient("MAIN", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+        Opened = true 
+    }),
+    Game = Window:Section({ 
+        Title = gradient("GAME", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+        Opened = true 
+    }),
+    Settings = Window:Section({ 
+        Title = gradient("SETTINGS", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+        Opened = true 
+    })
+}
+
+-- Табы (теперь будут отображаться как в примере)
+local WindowTabs = {
+    -- Вкладки в Main
+    InfoTab = Tabs.Main:Tab({ Title = "INFO", Icon = "info", Locked = false }),
+    SocialsTab = Tabs.Main:Tab({ Title = "SOCIALS", Icon = "users", Locked = false }),
+    CharacterTab = Tabs.Main:Tab({ Title = "CHARACTER", Icon = "user", Locked = false }),
+    
+    -- Вкладки в Game
+    AutofarmTab = Tabs.Game:Tab({ Title = "AUTOFARM", Icon = "refresh-cw", Locked = false }),
+    EspTab = Tabs.Game:Tab({ Title = "ESP", Icon = "eye", Locked = false }),
+    CombatTab = Tabs.Game:Tab({ Title = "COMBAT", Icon = "sword", Locked = false }),
+    
+    -- Вкладки в Settings
+    GameSettingsTab = Tabs.Settings:Tab({ Title = "GAME SETTINGS", Icon = "settings", Locked = false }),
+    ServerTab = Tabs.Settings:Tab({ Title = "SERVER", Icon = "server", Locked = false }),
+    AutoExecuteTab = Tabs.Settings:Tab({ Title = "AUTO EXECUTE", Icon = "play", Locked = false })
+}
+
+--[[ 
+    ===============================
+    РЕАЛИЗАЦИЯ CHARACTER TAB
+    ===============================
+]]
+
+-- Создаем подсекции внутри Character Tab
+local CharacterSubTabs = {
+    ValuesTab = WindowTabs.CharacterTab:Tab({ Title = "VALUES", Icon = "sliders" }),
+    StatesTab = WindowTabs.CharacterTab:Tab({ Title = "STATES", Icon = "toggle-right" })
+}
+
+-- Добавляем Paragraph с описанием
+CharacterSubTabs.ValuesTab:Paragraph({
+    Title = gradient("CHARACTER VALUES", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Adjust your character's movement properties",
+    Image = "activity",
+    ImageSize = 20,
+    Color = "White"
+})
+
+-- Разделитель
+CharacterSubTabs.ValuesTab:Divider()
+
+-- Переменные для хранения значений
+local walkspeedValue = 16
+local jumpPowerValue = 50
+local gravityValue = 196.2
+
+-- Slider для скорости передвижения
+CharacterSubTabs.ValuesTab:Slider({
+    Title = gradient("WalkSpeed", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Set character movement speed",
+    Value = { Min = 0, Max = 200, Default = walkspeedValue },
+    Callback = function(value)
+        walkspeedValue = value
+        if game:GetService("Players").LocalPlayer.Character then
+            game:GetService("Players").LocalPlayer.Character.Humanoid.WalkSpeed = value
+        end
+    end
+})
+
+-- Slider для силы прыжка
+CharacterSubTabs.ValuesTab:Slider({
+    Title = gradient("Jump Power", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Set character jump height",
+    Value = { Min = 0, Max = 200, Default = jumpPowerValue },
+    Callback = function(value)
+        jumpPowerValue = value
+        if game:GetService("Players").LocalPlayer.Character then
+            game:GetService("Players").LocalPlayer.Character.Humanoid.JumpPower = value
+        end
+    end
+})
+
+-- Slider для гравитации
+CharacterSubTabs.ValuesTab:Slider({
+    Title = gradient("Gravity", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Set world gravity",
+    Value = { Min = 0, Max = 500, Default = gravityValue },
+    Callback = function(value)
+        gravityValue = value
+        game:GetService("Workspace").Gravity = value
+    end
+})
+
+-- Кнопка сброса значений
+CharacterSubTabs.ValuesTab:Button({
+    Title = gradient("Reset to Default", COLOR_PALETTE.Primary, COLOR_PALETTE.Accent),
+    Icon = "refresh-ccw",
+    Callback = function()
+        walkspeedValue = 16
+        jumpPowerValue = 50
+        gravityValue = 196.2
+        
+        if game:GetService("Players").LocalPlayer.Character then
+            local humanoid = game:GetService("Players").LocalPlayer.Character.Humanoid
+            humanoid.WalkSpeed = walkspeedValue
+            humanoid.JumpPower = jumpPowerValue
+        end
+        game:GetService("Workspace").Gravity = gravityValue
+        
+        WindUI:Notify({
+            Title = "Values Reset",
+            Content = "All character values reset to default",
+            Icon = "check",
+            Duration = 3
+        })
+    end
+})
+
+-- Разделитель перед States
+CharacterSubTabs.ValuesTab:Divider()
+
+-- Добавляем Paragraph для States
+CharacterSubTabs.StatesTab:Paragraph({
+    Title = gradient("CHARACTER STATES", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Toggle special character abilities",
+    Image = "zap",
+    ImageSize = 20,
+    Color = "White"
+})
+
+-- Разделитель
+CharacterSubTabs.StatesTab:Divider()
+
+-- Toggle для бесконечных прыжков
+CharacterSubTabs.StatesTab:Toggle({
+    Title = gradient("Infinite Jump", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Jump infinitely in mid-air",
+    Value = false,
+    Callback = function(state)
+        if state then
+            -- Активация бесконечных прыжков
+            local connection
+            connection = game:GetService("UserInputService").JumpRequest:Connect(function()
+                if game:GetService("Players").LocalPlayer.Character then
+                    game:GetService("Players").LocalPlayer.Character.Humanoid:ChangeState("Jumping")
+                end
+            end)
+            _G.InfiniteJumpConnection = connection
+        else
+            -- Деактивация
+            if _G.InfiniteJumpConnection then
+                _G.InfiniteJumpConnection:Disconnect()
+                _G.InfiniteJumpConnection = nil
+            end
+        end
+        WindUI:Notify({
+            Title = "Infinite Jump",
+            Content = state and "Enabled" or "Disabled",
+            Icon = state and "check" or "x",
+            Duration = 2
+        })
+    end
+})
+
+-- Toggle для ноклипа
+CharacterSubTabs.StatesTab:Toggle({
+    Title = gradient("Noclip", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Walk through walls and objects",
+    Value = false,
+    Callback = function(state)
+        _G.NoclipEnabled = state
+        if state then
+            -- Активация ноклипа
+            local noclipLoop
+            noclipLoop = game:GetService("RunService").Stepped:Connect(function()
+                if game:GetService("Players").LocalPlayer.Character then
+                    for _, part in pairs(game:GetService("Players").LocalPlayer.Character:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = false
+                        end
+                    end
+                end
+            end)
+            _G.NoclipLoop = noclipLoop
+        else
+            -- Деактивация
+            if _G.NoclipLoop then
+                _G.NoclipLoop:Disconnect()
+                _G.NoclipLoop = nil
+            end
+        end
+        WindUI:Notify({
+            Title = "Noclip",
+            Content = state and "Enabled" or "Disabled",
+            Icon = state and "check" or "x",
+            Duration = 2
+        })
+    end
+})
+
+-- Toggle для плавания
+CharacterSubTabs.StatesTab:Toggle({
+    Title = gradient("Swim", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Swim in any environment",
+    Value = false,
+    Callback = function(state)
+        if game:GetService("Players").LocalPlayer.Character then
+            game:GetService("Players").LocalPlayer.Character.Humanoid:SetAttribute("Swimming", state)
+        end
+        WindUI:Notify({
+            Title = "Swim",
+            Content = state and "Enabled" or "Disabled",
+            Icon = state and "check" or "x",
+            Duration = 2
+        })
+    end
+})
+
+-- Toggle для полета
+CharacterSubTabs.StatesTab:Toggle({
+    Title = gradient("Fly", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Toggle flight mode",
+    Value = false,
+    Callback = function(state)
+        if state then
+            -- Активация полета
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/FlyGuiV3.txt"))()
+        else
+            -- Деактивация полета
+            if _G.FlyGui then
+                _G.FlyGui:Destroy()
+                _G.FlyGui = nil
+            end
+        end
+        WindUI:Notify({
+            Title = "Fly",
+            Content = state and "Enabled" or "Disabled",
+            Icon = state and "check" or "x",
+            Duration = 2
+        })
+    end
+})
+
+-- Кнопка переключения темы
+Window:CreateTopbarButton("theme-switcher", "moon", function()
+    WindUI:SetTheme(WindUI:GetCurrentTheme() == "Dark" and "Light" or "Dark")
+    WindUI:Notify({
+        Title = "Theme Changed",
+        Content = "Current theme: "..WindUI:GetCurrentTheme(),
+        Duration = 2
+    })
+end, 990)
+
+-- Футер с информацией
+local footer = Window:Section({ Title = "SNT HUB v1.0" })
+footer:Paragraph({
+    Title = gradient("Created by Snowt_Scripter", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Telegram: @Snowt_TG",
+    Image = "user",
+    ImageSize = 20,
+    Color = "Grey"
+})
