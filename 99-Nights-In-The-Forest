@@ -1,0 +1,2318 @@
+local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+
+-- Настройки темы
+WindUI.TransparencyValue = 0.15
+
+WindUI:AddTheme({
+    Name = "SNTTheme",
+    Accent = "#18181b",
+    Dialog = "#18181b",
+    Outline = "#FFFFFF",
+    Text = "#FFFFFF",
+    Placeholder = "#000000",
+    Background = "#0e0e10",
+    Button = "#52525b",
+    Icon = "#00f7ff",
+})
+
+WindUI:SetTheme("SNTTheme")
+
+-- Цветовая палитра
+local COLOR_PALETTE = {
+    Primary   = Color3.fromHex("#24ffed"),
+    Secondary = Color3.fromHex("#000c63"),
+    Accent    = Color3.fromHex("#30ff6a"),
+    Dark      = Color3.fromHex("#0a0a1a"),
+    Text      = Color3.fromHex("#e0e0ff"),
+    Danger    = Color3.fromHex("#ff3e3e")
+}
+
+-- Функция градиента
+local function gradient(text, startColor, endColor)
+    local result = ""
+    for i = 1, #text do
+        local t = (i - 1) / (#text - 1)
+        local r = math.floor((startColor.R + (endColor.R - startColor.R) * t) * 255)
+        local g = math.floor((startColor.G + (endColor.G - startColor.G) * t) * 255)
+        local b = math.floor((startColor.B + (endColor.B - startColor.B) * t) * 255)
+        result = result .. string.format('<font color="rgb(%d,%d,%d)">%s</font>', r, g, b, text:sub(i, i))
+    end
+    return result
+end
+
+-- Создание окна
+local Window = WindUI:CreateWindow({
+    Title = gradient("SNT HUB [Beta]", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Icon = "infinity",
+    Author = gradient("99 Nights in the Forest", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Folder = "SNT_HUB",
+    Size = UDim2.fromOffset(400, 240),
+    Theme = "SNTTheme",
+    Background = WindUI:Gradient({
+        ["0"]   = { Color = COLOR_PALETTE.Dark,      Transparency = 0 },
+        ["50"]  = { Color = COLOR_PALETTE.Secondary, Transparency = 0 },
+        ["100"] = { Color = Color3.fromHex("#000000"), Transparency = 0 },
+    }, { Rotation = 150 }),
+    User = {
+        Enabled = true,
+        Anonymous = false,
+        Username = "Snowt_Scripter",
+        UserTag = "@Snowt_Scripter",
+        Callback = function()
+            WindUI:Notify({
+                Title = "User Profile",
+                Content = "Telegram: @Snowt_TG",
+                Duration = 3
+            })
+        end
+    },
+    SideBarWidth = 200,
+    ScrollBarEnabled = true,
+    CornerRadius = UDim.new(0, 14),
+    DropShadow = true
+})
+
+-- Секции
+local MainSection = Window:Section({ 
+    Title = gradient("MAIN", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Opened = true 
+})
+
+local GameSection = Window:Section({ 
+    Title = gradient("GAME", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Opened = true
+})
+
+local SettingsSection = Window:Section({ 
+    Title = gradient("SETTINGS", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Opened = true
+})
+
+-- Табы
+local InfoTab       = MainSection:Tab({ Title = "INFO", Icon = "info" })
+local SocialsTab    = MainSection:Tab({ Title = "SOCIALS", Icon = "users" })
+local CharacterTab  = MainSection:Tab({ Title = "CHARACTER", Icon = "user" })
+
+local TeleportTab = GameSection:Tab({ Title = "TELEPORT", Icon = "rocket" })
+local ChestTab = GameSection:Tab({ Title = "CHEST", Icon = "key" })
+local ItemsTab = GameSection:Tab({ Title = "ITEMS", Icon = "box" })
+local EspTab = GameSection:Tab({ Title = "ESP", Icon = "eye" })
+local AutoFarmTab = GameSection:Tab({ Title = "AUTOFARM", Icon = "plus" })
+local CombatTab = GameSection:Tab({ Title = "COMBAT", Icon = "sword" })
+
+local GameSettingsTab = SettingsSection:Tab({ Title = "GAME SETTINGS", Icon = "settings" })
+local ServerTab       = SettingsSection:Tab({ Title = "SERVER", Icon = "server" })
+local AutoExecuteTab  = SettingsSection:Tab({ Title = "AUTO EXECUTE", Icon = "play" })
+
+-- =====================
+-- РЕАЛИЗАЦИЯ INFO TAB
+-- =====================
+
+local FpsParagraph, PingParagraph, PlayersParagraph, GameParagraph
+
+local frameCount = 0
+local lastTime = tick()
+local currentFPS = 0
+
+game:GetService("RunService").RenderStepped:Connect(function()
+    frameCount += 1
+end)
+
+
+-- Функция для получения FPS
+local function updateFPS()
+    local now = tick()
+    local delta = now - lastTime
+
+    if delta >= 1 then
+        currentFPS = frameCount / delta
+        frameCount = 0
+        lastTime = now
+    end
+
+    return math.floor(currentFPS)
+end
+
+-- Создание элементов Info Tab
+FpsParagraph = InfoTab:Paragraph({
+    Title     = gradient("FPS: --",    COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc      = "Loading...",
+    Image     = "activity",
+    ImageSize = 20,
+    Color     = "White"
+})
+
+PingParagraph = InfoTab:Paragraph({
+    Title     = gradient("PING: --",   COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc      = "Loading...",
+    Image     = "signal",
+    ImageSize = 20,
+    Color     = "White"
+})
+
+PlayersParagraph = InfoTab:Paragraph({
+    Title     = gradient("PLAYERS: --", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc      = "Loading...",
+    Image     = "users",
+    ImageSize = 20,
+    Color     = "White"
+})
+
+GameParagraph = InfoTab:Paragraph({
+    Title     = gradient("GAME: --",   COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc      = "Loading...",
+    Image     = "gamepad",
+    ImageSize = 20,
+    Color     = "White"
+})
+
+-- Функция для обновления информации
+local function updateInfo()
+    -- Получаем FPS
+    local fps = updateFPS() or 0
+
+    -- Получаем Ping (заглушка)
+    local ping = math.random(30, 120)
+
+    -- Получаем информацию об игроках
+    local players    = #game:GetService("Players"):GetPlayers()
+    local maxPlayers = game:GetService("Players").MaxPlayers
+
+    -- Обновляем Paragraph’ы
+    FpsParagraph:SetTitle(gradient("FPS: "..fps,  COLOR_PALETTE.Primary, fps > 60 and COLOR_PALETTE.Accent or COLOR_PALETTE.Danger))
+    FpsParagraph:SetDesc(fps > 60 and "Excellent performance" or "Low performance")
+
+    PingParagraph:SetTitle(gradient("PING: "..ping.."ms", COLOR_PALETTE.Primary, ping < 80 and COLOR_PALETTE.Accent or COLOR_PALETTE.Danger))
+    PingParagraph:SetDesc(ping < 80 and "Good connection" or "High latency")
+
+    PlayersParagraph:SetTitle(gradient("PLAYERS: "..players.."/"..maxPlayers, COLOR_PALETTE.Primary, COLOR_PALETTE.Text))
+    PlayersParagraph:SetDesc("Currently in server")
+
+    GameParagraph:SetTitle(gradient(game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name, COLOR_PALETTE.Primary, COLOR_PALETTE.Text))
+    GameParagraph:SetDesc("Current game")
+end
+
+
+-- Кнопка обновления
+InfoTab:Button({
+    Title = gradient("Refresh Info", COLOR_PALETTE.Primary, COLOR_PALETTE.Accent),
+    Icon = "refresh-cw",
+    Callback = function()
+        updateInfo()
+        WindUI:Notify({
+            Title = "Info Updated",
+            Content = "Game information refreshed",
+            Duration = 1
+        })
+    end
+})
+
+-- Первичная инициализация
+updateInfo()
+
+-- Автообновление каждую секунду
+spawn(function()
+    while wait(1) do
+        updateInfo()
+    end
+end)
+
+-- ========================
+-- РЕАЛИЗАЦИЯ SOCIALS TAB
+-- ========================
+
+-- TikTok
+local TikTokParagraph = SocialsTab:Paragraph({
+    Title     = gradient("My TikTok", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc      = "Please join to my TikTok account",
+    Image     = "video",
+    ImageSize = 20,
+    Color     = "White"
+})
+
+SocialsTab:Button({
+    Title    = gradient("TikTok", COLOR_PALETTE.Primary, COLOR_PALETTE.Accent),
+    Desc     = "Copy link on my TikTok",
+    Icon     = "copy",
+    Callback = function()
+        setclipboard("https://www.tiktok.com/@snowt.scripts?_t=ZT-8yhrbnIUFLL&_r=1")
+        WindUI:Notify({
+            Title   = "Link Copied",
+            Content = "TikTok link copied to clipboard",
+            Duration = 2
+        })
+    end
+})
+
+-- YouTube
+local YouTubeParagraph = SocialsTab:Paragraph({
+    Title     = gradient("YouTube", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc      = "Check out my YouTube channel",
+    Image     = "youtube",
+    ImageSize = 20,
+    Color     = "White"
+})
+
+SocialsTab:Button({
+    Title    = gradient("YouTube", COLOR_PALETTE.Primary, COLOR_PALETTE.Accent),
+    Desc     = "Copy link to my YouTube",
+    Icon     = "copy",
+    Callback = function()
+        setclipboard("https://youtube.com/@snowt_team?si=AmXDJj0qFQB-dzhv")
+        WindUI:Notify({
+            Title   = "Link Copied",
+            Content = "YouTube link copied to clipboard",
+            Duration = 2
+        })
+    end
+})
+
+-- Telegram
+local TelegramParagraph = SocialsTab:Paragraph({
+    Title     = gradient("Telegram", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc      = "Join my Telegram channel",
+    Image     = "send",
+    ImageSize = 20,
+    Color     = "White"
+})
+
+SocialsTab:Button({
+    Title    = gradient("Telegram", COLOR_PALETTE.Primary, COLOR_PALETTE.Accent),
+    Desc     = "Copy link to my Telegram",
+    Icon     = "copy",
+    Callback = function()
+        setclipboard("https://t.me/snowtscripts")
+        WindUI:Notify({
+            Title   = "Link Copied",
+            Content = "Telegram link copied to clipboard",
+            Duration = 2
+        })
+    end
+})
+
+
+-- ========================
+-- РЕАЛИЗАЦИЯ CHARACTER TAB
+-- ========================
+
+-- Переменные для хранения состояний
+local walkspeed = 16
+local jumpPower = 50
+local gravity = 196.2
+local noclip = false
+local infiniteJump = false
+
+-- Функция для применения изменений к персонажу
+local function updateCharacter()
+    local character = game:GetService("Players").LocalPlayer.Character
+    if character and character:FindFirstChild("Humanoid") then
+        character.Humanoid.WalkSpeed = walkspeed
+        character.Humanoid.JumpPower = jumpPower
+    end
+    game:GetService("Workspace").Gravity = gravity
+end
+
+-- Slider для скорости передвижения
+CharacterTab:Slider({
+    Title = gradient("WalkSpeed", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Set movement speed (16 is default)",
+    Value = { Min = 0, Max = 200, Default = walkspeed },
+    Callback = function(value)
+        walkspeed = value
+        updateCharacter()
+    end
+})
+
+-- Slider для силы прыжка
+CharacterTab:Slider({
+    Title = gradient("Jump Power", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Set jump height (50 is default)",
+    Value = { Min = 0, Max = 200, Default = jumpPower },
+    Callback = function(value)
+        jumpPower = value
+        updateCharacter()
+    end
+})
+
+-- Slider для гравитации
+CharacterTab:Slider({
+    Title = gradient("Gravity", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Set world gravity (196.2 is default)",
+    Value = { Min = 0, Max = 500, Default = gravity },
+    Callback = function(value)
+        gravity = value
+        updateCharacter()
+    end
+})
+
+-- Toggle для Noclip
+CharacterTab:Toggle({
+    Title = gradient("Noclip", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Walk through walls",
+    Value = noclip,
+    Callback = function(state)
+        noclip = state
+        if state then
+            -- Активация ноклипа
+            local noclipLoop
+            noclipLoop = game:GetService("RunService").Stepped:Connect(function()
+                if game:GetService("Players").LocalPlayer.Character then
+                    for _, part in pairs(game:GetService("Players").LocalPlayer.Character:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = false
+                        end
+                    end
+                end
+            end)
+            _G.NoclipLoop = noclipLoop
+        else
+            -- Деактивация
+            if _G.NoclipLoop then
+                _G.NoclipLoop:Disconnect()
+            end
+        end
+    end
+})
+
+-- Toggle для бесконечных прыжков
+CharacterTab:Toggle({
+    Title = gradient("Infinite Jump", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Jump in mid-air",
+    Value = infiniteJump,
+    Callback = function(state)
+        infiniteJump = state
+        if state then
+            -- Активация бесконечных прыжков
+            local connection
+            connection = game:GetService("UserInputService").JumpRequest:Connect(function()
+                if game:GetService("Players").LocalPlayer.Character then
+                    game:GetService("Players").LocalPlayer.Character.Humanoid:ChangeState("Jumping")
+                end
+            end)
+            _G.InfiniteJumpConnection = connection
+        else
+            -- Деактивация
+            if _G.InfiniteJumpConnection then
+                _G.InfiniteJumpConnection:Disconnect()
+            end
+        end
+    end
+})
+
+-- Кнопка сброса настроек
+CharacterTab:Button({
+    Title = gradient("Reset to Default", COLOR_PALETTE.Primary, COLOR_PALETTE.Accent),
+    Icon = "refresh-ccw",
+    Callback = function()
+        walkspeed = 16
+        jumpPower = 50
+        gravity = 196.2
+        noclip = false
+        infiniteJump = false
+        
+        updateCharacter()
+        
+        if _G.NoclipLoop then
+            _G.NoclipLoop:Disconnect()
+        end
+        
+        if _G.InfiniteJumpConnection then
+            _G.InfiniteJumpConnection:Disconnect()
+        end
+        
+        WindUI:Notify({
+            Title = "Reset Complete",
+            Content = "All settings reset to default",
+            Duration = 2
+        })
+    end
+})
+
+-- Кнопка переключения темы
+Window:CreateTopbarButton("theme-switcher", "moon", function()
+    WindUI:SetTheme(WindUI:GetCurrentTheme() == "Dark" and "Light" or "Dark")
+    WindUI:Notify({
+        Title = "Theme Changed",
+        Content = "Current theme: "..WindUI:GetCurrentTheme(),
+        Duration = 2
+    })
+end, 990)
+
+-- ========================
+-- РЕАЛИЗАЦИЯ TELEPORT TAB
+-- ========================
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
+local HttpService = game:GetService("HttpService")
+
+-- --------------- УТИЛИТЫ ---------------
+
+local function getHRP(character)
+    if not character then return nil end
+    return character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso")
+end
+
+local function getInstanceCFrame(obj)
+    if not obj or not obj.Parent then return nil end
+    if obj:IsA("BasePart") then
+        return obj.CFrame
+    elseif obj:IsA("Model") then
+        if obj.PrimaryPart then
+            return obj.PrimaryPart.CFrame
+        else
+            local okPivot, cf = pcall(function() return obj:GetPivot() end)
+            if okPivot and cf then return cf end
+            local okBox, cfb = pcall(function()
+                local cframe, _ = obj:GetBoundingBox()
+                return cframe
+            end)
+            if okBox and cfb then return cfb end
+        end
+    end
+    return nil
+end
+
+local function teleportToCFrame(cf)
+    local char = LocalPlayer.Character
+    if not char then
+        WindUI:Notify({ Title = "Teleport", Content = "Character not found", Duration = 2 })
+        return
+    end
+    local hrp = getHRP(char)
+    if not hrp then
+        WindUI:Notify({ Title = "Teleport", Content = "HumanoidRootPart not found", Duration = 2 })
+        return
+    end
+    -- небольшой подъём, чтобы не застрять
+    local target = cf * CFrame.new(0, 3, 0)
+    pcall(function()
+        if char.PivotTo then
+            char:PivotTo(target)
+        else
+            hrp.CFrame = target
+        end
+    end)
+end
+
+local function safeGet(pathFn)
+    local ok, result = pcall(pathFn)
+    if ok then return result end
+    return nil
+end
+
+-- --------------- КЭШИ И ОБНОВЛЕНИЕ ЛИСТОВ ---------------
+
+local StructureMap, StructureNames = {}, {}
+local ItemMap, ItemNames = {}, {}
+local PlayerMap, PlayerNames = {}, {}
+
+local function uniquifyName(map, base)
+    if not map[base] then return base end
+    local i = 2
+    while map[base .. " [" .. i .. "]"] do
+        i += 1
+    end
+    return base .. " [" .. i .. "]"
+end
+
+local function refreshStructures()
+    StructureMap, StructureNames = {}, {}
+    local folder = Workspace:FindFirstChild("Structures")
+    if folder then
+        for _, inst in ipairs(folder:GetChildren()) do
+            local label = uniquifyName(StructureMap, inst.Name)
+            StructureMap[label] = inst
+            table.insert(StructureNames, label)
+        end
+    end
+    table.sort(StructureNames)
+end
+
+local function refreshItems()
+    ItemMap, ItemNames = {}, {}
+    local folder = Workspace:FindFirstChild("Items")
+    if folder then
+        for _, inst in ipairs(folder:GetChildren()) do
+            local label = uniquifyName(ItemMap, inst.Name)
+            ItemMap[label] = inst
+            table.insert(ItemNames, label)
+        end
+    end
+    table.sort(ItemNames)
+end
+
+local function refreshPlayers()
+    PlayerMap, PlayerNames = {}, {}
+    -- Игроки (живые персонажи)
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character then
+            local char = plr.Character
+            local label = uniquifyName(PlayerMap, "Player | " .. plr.Name)
+            PlayerMap[label] = char
+            table.insert(PlayerNames, label)
+        end
+    end
+    -- NPC и существа
+    local charsFolder = Workspace:FindFirstChild("Characters")
+    if charsFolder then
+        for _, inst in ipairs(charsFolder:GetChildren()) do
+            local label = uniquifyName(PlayerMap, "NPC | " .. inst.Name)
+            PlayerMap[label] = inst
+            table.insert(PlayerNames, label)
+        end
+    end
+    table.sort(PlayerNames)
+end
+
+-- --------------- КООРДИНАТЫ (СОХРАНЕНИЕ В ЭКСПЛОИТ) ---------------
+
+getgenv().SNT_HUB_SavedCoords = getgenv().SNT_HUB_SavedCoords or {}
+local SavedCoords = getgenv().SNT_HUB_SavedCoords
+
+local SavedCoordsMap, SavedCoordsNames = {}, {}
+
+local function refreshSavedCoords()
+    SavedCoordsMap, SavedCoordsNames = {}, {}
+    for name, cf in pairs(SavedCoords) do
+        SavedCoordsMap[name] = cf
+        table.insert(SavedCoordsNames, name)
+    end
+    table.sort(SavedCoordsNames)
+end
+
+local function saveCurrentCoords(name)
+    local char = LocalPlayer.Character
+    local hrp = getHRP(char or {})
+    if not hrp then
+        WindUI:Notify({ Title = "Coordinates", Content = "HRP not found", Duration = 2 })
+        return
+    end
+    if not name or name == "" then
+        local n = 1
+        while SavedCoords["Slot " .. n] do n += 1 end
+        name = "Slot " .. n
+    end
+    SavedCoords[name] = hrp.CFrame
+    refreshSavedCoords()
+    WindUI:Notify({ Title = "Coordinates", Content = ("Saved as '%s'"):format(name), Duration = 2 })
+end
+
+local function parseXYZ(text)
+    -- ожидается формат: x,y,z (через запятую, пробелы игнорим)
+    if not text or text == "" then return nil end
+    local cleaned = text:gsub("[\n\r]", ""):gsub("%s+", "")
+    local parts = {}
+    for value in string.gmatch(cleaned, "([^,]+)") do
+        table.insert(parts, value)
+    end
+    if #parts ~= 3 then return nil end
+    local x = tonumber(parts[1])
+    local y = tonumber(parts[2])
+    local z = tonumber(parts[3])
+    if not (x and y and z) then return nil end
+    return Vector3.new(x, y, z)
+end
+
+-- --------------- UI: СЕКЦИИ И КОНТРОЛЫ ---------------
+
+-- Заголовки-секции
+TeleportTab:Paragraph({
+    Title = gradient("STRUCTURES", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc  = "Teleport to any structure on the map",
+    Image = "map",
+    ImageSize = 18,
+    Color = "White"
+})
+
+-- Обновить и заполнить списки впервые
+refreshStructures()
+refreshItems()
+refreshPlayers()
+refreshSavedCoords()
+
+-- STRUCTURES
+local selectedStructure = nil
+local StructuresDropdown = TeleportTab:Dropdown({
+    Title = "Structures",
+    Values = StructureNames,
+    Value = StructureNames[1],
+    Multi = false,
+    AllowNone = true,
+    Callback = function(choice)
+        selectedStructure = choice
+    end
+})
+
+TeleportTab:Button({
+    Title = gradient("Teleport to Structure", COLOR_PALETTE.Primary, COLOR_PALETTE.Accent),
+    Icon = "navigation",
+    Callback = function()
+        if not selectedStructure or not StructureMap[selectedStructure] then
+            WindUI:Notify({ Title="Structures", Content="Select a structure first", Duration=2 })
+            return
+        end
+        local cf = getInstanceCFrame(StructureMap[selectedStructure])
+        if cf then
+            teleportToCFrame(cf)
+        else
+            WindUI:Notify({ Title="Structures", Content="CFrame not found for target", Duration=2 })
+        end
+    end
+})
+
+TeleportTab:Button({
+    Title = "Refresh Structures",
+    Icon = "refresh-cw",
+    Callback = function()
+        refreshStructures()
+        StructuresDropdown:Refresh(StructureNames)
+        WindUI:Notify({ Title="Structures", Content="List refreshed", Duration=1 })
+    end
+})
+
+-- SPAWN
+TeleportTab:Paragraph({
+    Title = gradient("SPAWN", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc  = "Teleport to spawn location",
+    Image = "target",
+    ImageSize = 18,
+    Color = "White"
+})
+
+TeleportTab:Button({
+    Title = gradient("Teleport to Spawn", COLOR_PALETTE.Primary, COLOR_PALETTE.Accent),
+    Icon = "target",
+    Callback = function()
+        local spawnLoc = safeGet(function() return Workspace.Map.SpawnLocation end)
+        if spawnLoc and spawnLoc.CFrame then
+            teleportToCFrame(spawnLoc.CFrame)
+        else
+            WindUI:Notify({ Title="Spawn", Content="SpawnLocation not found", Duration=2 })
+        end
+    end
+})
+
+-- ITEMS
+TeleportTab:Paragraph({
+    Title = gradient("ITEMS", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc  = "Teleport to any item on the map",
+    Image = "box",
+    ImageSize = 18,
+    Color = "White"
+})
+
+local selectedItem = nil
+local ItemsDropdown = TeleportTab:Dropdown({
+    Title = "Items",
+    Values = ItemNames,
+    Value = ItemNames[1],
+    Multi = false,
+    AllowNone = true,
+    Callback = function(choice)
+        selectedItem = choice
+    end
+})
+
+TeleportTab:Button({
+    Title = gradient("Teleport to Item", COLOR_PALETTE.Primary, COLOR_PALETTE.Accent),
+    Icon = "navigation",
+    Callback = function()
+        if not selectedItem or not ItemMap[selectedItem] then
+            WindUI:Notify({ Title="Items", Content="Select an item first", Duration=2 })
+            return
+        end
+        local cf = getInstanceCFrame(ItemMap[selectedItem])
+        if cf then
+            teleportToCFrame(cf)
+        else
+            WindUI:Notify({ Title="Items", Content="CFrame not found for item", Duration=2 })
+        end
+    end
+})
+
+TeleportTab:Button({
+    Title = "Refresh Items",
+    Icon = "refresh-cw",
+    Callback = function()
+        refreshItems()
+        ItemsDropdown:Refresh(ItemNames)
+        WindUI:Notify({ Title="Items", Content="List refreshed", Duration=1 })
+    end
+})
+
+-- PLAYERS
+TeleportTab:Paragraph({
+    Title = gradient("PLAYERS", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc  = "Teleport to players or NPCs",
+    Image = "users",
+    ImageSize = 18,
+    Color = "White"
+})
+
+local selectedPlayerLabel = nil
+local PlayersDropdown = TeleportTab:Dropdown({
+    Title = "Players / NPC",
+    Values = PlayerNames,
+    Value = PlayerNames[1],
+    Multi = false,
+    AllowNone = true,
+    Callback = function(choice)
+        selectedPlayerLabel = choice
+    end
+})
+
+TeleportTab:Button({
+    Title = gradient("Teleport to Target", COLOR_PALETTE.Primary, COLOR_PALETTE.Accent),
+    Icon = "navigation",
+    Callback = function()
+        if not selectedPlayerLabel or not PlayerMap[selectedPlayerLabel] then
+            WindUI:Notify({ Title="Players", Content="Select a player/NPC first", Duration=2 })
+            return
+        end
+        local target = PlayerMap[selectedPlayerLabel]
+        local cf = getInstanceCFrame(getHRP(target)) or getInstanceCFrame(target)
+        if cf then
+            teleportToCFrame(cf)
+        else
+            WindUI:Notify({ Title="Players", Content="CFrame not found for target", Duration=2 })
+        end
+    end
+})
+
+TeleportTab:Button({
+    Title = "Refresh Players / NPCs",
+    Icon = "refresh-cw",
+    Callback = function()
+        refreshPlayers()
+        PlayersDropdown:Refresh(PlayerNames)
+        WindUI:Notify({ Title="Players", Content="List refreshed", Duration=1 })
+    end
+})
+
+-- COORDINATES
+TeleportTab:Paragraph({
+    Title = gradient("COORDINATES", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc  = "Save/teleport using coordinates",
+    Image = "map-pin",
+    ImageSize = 18,
+    Color = "White"
+})
+
+local selectedSaved = nil
+local SavedDropdown = TeleportTab:Dropdown({
+    Title = "Saved coordinates",
+    Values = SavedCoordsNames,
+    Value = SavedCoordsNames[1],
+    Multi = false,
+    AllowNone = true,
+    Callback = function(choice)
+        selectedSaved = choice
+    end
+})
+
+TeleportTab:Button({
+    Title = gradient("Teleport to Saved", COLOR_PALETTE.Primary, COLOR_PALETTE.Accent),
+    Icon = "navigation",
+    Callback = function()
+        if not selectedSaved or not SavedCoordsMap[selectedSaved] then
+            WindUI:Notify({ Title="Coordinates", Content="Choose saved coordinates", Duration=2 })
+            return
+        end
+        teleportToCFrame(SavedCoordsMap[selectedSaved])
+    end
+})
+
+TeleportTab:Button({
+    Title = "Save Current Position (auto name)",
+    Icon = "save",
+    Callback = function()
+        saveCurrentCoords(nil)
+        refreshSavedCoords()
+        SavedDropdown:Refresh(SavedCoordsNames)
+    end
+})
+
+TeleportTab:Button({
+    Title = "Remove Selected Saved",
+    Icon = "trash-2",
+    Callback = function()
+        if not selectedSaved or not SavedCoords[selectedSaved] then
+            WindUI:Notify({ Title="Coordinates", Content="Nothing selected", Duration=2 })
+            return
+        end
+        SavedCoords[selectedSaved] = nil
+        refreshSavedCoords()
+        SavedDropdown:Refresh(SavedCoordsNames)
+        WindUI:Notify({ Title="Coordinates", Content="Removed", Duration=1 })
+    end
+})
+
+-- Clipboard helpers (если исполнитель поддерживает getclipboard/setclipboard)
+TeleportTab:Button({
+    Title = "Copy Current Coords to Clipboard",
+    Icon = "copy",
+    Callback = function()
+        local char = LocalPlayer.Character
+        local hrp = getHRP(char or {})
+        if not hrp then
+            WindUI:Notify({ Title="Clipboard", Content="HRP not found", Duration=2 })
+            return
+        end
+        local v = hrp.Position
+        local text = string.format("%.3f, %.3f, %.3f", v.X, v.Y, v.Z)
+        if setclipboard then
+            setclipboard(text)
+            WindUI:Notify({ Title="Clipboard", Content="Coords copied", Duration=1 })
+        else
+            WindUI:Notify({ Title="Clipboard", Content="setclipboard not available", Duration=2 })
+        end
+    end
+})
+
+TeleportTab:Button({
+    Title = "Teleport to Clipboard Coords (x,y,z)",
+    Icon = "map",
+    Callback = function()
+        if not getclipboard then
+            WindUI:Notify({ Title="Clipboard", Content="getclipboard not available", Duration=2 })
+            return
+        end
+        local text = getclipboard()
+        local vec = parseXYZ(text)
+        if not vec then
+            WindUI:Notify({ Title="Clipboard", Content="Invalid format. Use: x,y,z", Duration=3 })
+            return
+        end
+        teleportToCFrame(CFrame.new(vec))
+    end
+})
+
+
+-- ========================
+-- РЕАЛИЗАЦИЯ CHEST TAB
+-- ========================
+
+local ChestMap, ChestNames = {}, {}
+
+local function refreshChests()
+    ChestMap, ChestNames = {}, {}
+    local itemsFolder = workspace:FindFirstChild("Items")
+    if itemsFolder then
+        for _, item in ipairs(itemsFolder:GetChildren()) do
+            if string.find(string.lower(item.Name), "chest") then
+                local label = item.Name
+                if ChestMap[label] then
+                    local i = 2
+                    while ChestMap[label.." ["..i.."]"] do i += 1 end
+                    label = label.." ["..i.."]"
+                end
+                ChestMap[label] = item
+                table.insert(ChestNames, label)
+            end
+        end
+    end
+    table.sort(ChestNames)
+end
+
+refreshChests()
+
+-- 📊 Параграф: количество сундуков
+ChestTab:Paragraph({
+    Title = gradient("CHESTS: "..#ChestNames, COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "All chests available on the map",
+    Image = "archive",
+    ImageSize = 20,
+    Color = "White"
+})
+
+-- 🧭 Дропдаун выбора сундука
+local selectedChest = ChestNames[1]
+local ChestDropdown = ChestTab:Dropdown({
+    Title = "Available Chests",
+    Values = ChestNames,
+    Value = selectedChest,
+    Multi = false,
+    AllowNone = true,
+    Callback = function(value)
+        selectedChest = value
+    end
+})
+
+-- 📍 Телепорт к сундуку
+ChestTab:Button({
+    Title = gradient("Teleport to Chest", COLOR_PALETTE.Primary, COLOR_PALETTE.Accent),
+    Icon = "navigation",
+    Callback = function()
+        local chest = ChestMap[selectedChest]
+        if chest and chest:IsA("Model") then
+            local cf = chest.PrimaryPart and chest.PrimaryPart.CFrame or chest:GetBoundingBox()
+            teleportToCFrame(cf)
+        end
+    end
+})
+
+-- 🗝️ Открытие сундука через ProximityPrompt (исправленная версия для 99 Nights in the Forest)
+ChestTab:Button({
+    Title = gradient("Open Chest (Proximity)", COLOR_PALETTE.Primary, COLOR_PALETTE.Accent),
+    Icon = "key",
+    Callback = function()
+        local chest = ChestMap[selectedChest]
+        if chest then
+            -- Находим ProximityPrompt по специфическому пути игры
+            local prompt
+            if chest:FindFirstChild("Main") then
+                local main = chest.Main
+                if main:FindFirstChild("ProximityAttachment") then
+                    local attachment = main.ProximityAttachment
+                    prompt = attachment:FindFirstChild("ProximityInteraction")
+                end
+            end
+            
+            if prompt and prompt:IsA("ProximityPrompt") then
+                -- Сохраняем оригинальные настройки
+                local originalDistance = prompt.MaxActivationDistance
+                local originalDuration = prompt.HoldDuration
+                
+                -- Модифицируем для мгновенного открытия
+                prompt.MaxActivationDistance = 10000
+                prompt.HoldDuration = 0
+                
+                -- Активируем
+                fireproximityprompt(prompt)
+                
+                -- Восстанавливаем оригинальные значения
+                task.defer(function()
+                    prompt.MaxActivationDistance = originalDistance
+                    prompt.HoldDuration = originalDuration
+                end)
+                
+                WindUI:Notify({
+                    Title = "Chest Opened",
+                    Content = chest.Name.." opened instantly",
+                    Duration = 2
+                })
+            else
+                WindUI:Notify({
+                    Title = "Error",
+                    Content = "ProximityPrompt not found in: Main.ProximityAttachment.ProximityInteraction",
+                    Duration = 3
+                })
+            end
+        else
+            WindUI:Notify({
+                Title = "Error",
+                Content = "Select a chest first",
+                Duration = 2
+            })
+        end
+    end
+})
+
+-- 🔁 Автооткрытие сундуков (исправленная версия для 99 Nights in the Forest)
+local autoOpen = false
+
+ChestTab:Toggle({
+    Title = gradient("Auto Open Chests", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Instantly open all chests (no distance limit)",
+    Value = autoOpen,
+    Callback = function(state)
+        autoOpen = state
+        if state then
+            spawn(function()
+                while autoOpen do
+                    for _, chest in pairs(ChestMap) do
+                        if chest:FindFirstChild("Main") then
+                            local main = chest.Main
+                            if main:FindFirstChild("ProximityAttachment") then
+                                local attachment = main.ProximityAttachment
+                                local prompt = attachment:FindFirstChild("ProximityInteraction")
+                                
+                                if prompt and prompt:IsA("ProximityPrompt") then
+                                    local originalDistance = prompt.MaxActivationDistance
+                                    local originalDuration = prompt.HoldDuration
+                                    
+                                    prompt.MaxActivationDistance = 10000
+                                    prompt.HoldDuration = 0
+                                    
+                                    fireproximityprompt(prompt)
+                                    
+                                    task.defer(function()
+                                        prompt.MaxActivationDistance = originalDistance
+                                        prompt.HoldDuration = originalDuration
+                                    end)
+                                end
+                            end
+                        end
+                    end
+                    task.wait(0.3)  -- Быстрая проверка
+                end
+            end)
+        end
+    end
+})
+
+-- ♻️ Обновить список сундуков
+ChestTab:Button({
+    Title = "Refresh Chest List",
+    Icon = "refresh-cw",
+    Callback = function()
+        refreshChests()
+        ChestDropdown:Refresh(ChestNames)
+        WindUI:Notify({
+            Title = "Chest List",
+            Content = "List updated",
+            Duration = 1
+        })
+    end
+})
+
+
+-- ========================
+-- РЕАЛИЗАЦИЯ ITEMS TAB
+-- ========================
+
+local ItemMap, ItemNames = {}, {}
+local AutoBring = false
+
+-- Функция обновления списка предметов
+local function refreshItems()
+    ItemMap, ItemNames = {}, {}
+    local itemsFolder = workspace:FindFirstChild("Items")
+    if itemsFolder then
+        for _, item in ipairs(itemsFolder:GetChildren()) do
+            if item:IsA("Model") then
+                local label = item.Name
+                if ItemMap[label] then
+                    local i = 2
+                    while ItemMap[label.." ["..i.."]"] do i += 1 end
+                    label = label.." ["..i.."]"
+                end
+                ItemMap[label] = item
+                table.insert(ItemNames, label)
+            end
+        end
+    end
+    table.sort(ItemNames)
+end
+
+-- Первоначальное обновление списка
+refreshItems()
+
+-- 📊 Параграф: количество предметов
+ItemsTab:Paragraph({
+    Title = gradient("ITEMS: "..#ItemNames, COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "All items available on the map",
+    Image = "box",
+    ImageSize = 20,
+    Color = "White"
+})
+
+-- 🧭 Дропдаун выбора предмета
+local selectedItem = ItemNames[1]
+local ItemsDropdown = ItemsTab:Dropdown({
+    Title = "Available Items",
+    Values = ItemNames,
+    Value = selectedItem,
+    Multi = false,
+    AllowNone = true,
+    Callback = function(value)
+        selectedItem = value
+    end
+})
+
+-- 🔄 Кнопка обновления списка
+ItemsTab:Button({
+    Title = "Refresh Items List",
+    Icon = "refresh-cw",
+    Callback = function()
+        refreshItems()
+        ItemsDropdown:Refresh(ItemNames)
+        WindUI:Notify({
+            Title = "Items List",
+            Content = "List updated",
+            Duration = 1
+        })
+    end
+})
+
+-- 📍 Телепорт к предмету
+ItemsTab:Button({
+    Title = gradient("Teleport to Item", COLOR_PALETTE.Primary, COLOR_PALETTE.Accent),
+    Icon = "navigation",
+    Callback = function()
+        local item = ItemMap[selectedItem]
+        if item and item:IsA("Model") then
+            local cf = item.PrimaryPart and item.PrimaryPart.CFrame or item:GetBoundingBox()
+            teleportToCFrame(cf)
+        end
+    end
+})
+
+-- 🚀 Притягивание предмета к себе
+ItemsTab:Button({
+    Title = gradient("Bring Item to Me", COLOR_PALETTE.Primary, COLOR_PALETTE.Accent),
+    Icon = "arrow-down",
+    Callback = function()
+        local item = ItemMap[selectedItem]
+        local char = game:GetService("Players").LocalPlayer.Character
+        if item and char and char:FindFirstChild("HumanoidRootPart") then
+            local hrp = char.HumanoidRootPart
+            local cf = hrp.CFrame * CFrame.new(0, 0, -3)
+            
+            if item.PrimaryPart then
+                item:SetPrimaryPartCFrame(cf)
+            else
+                item:PivotTo(cf)
+            end
+            
+            WindUI:Notify({
+                Title = "Item Brought",
+                Content = item.Name.." brought to you",
+                Duration = 2
+            })
+        end
+    end
+})
+
+-- 🔄 Автопритягивание предметов
+ItemsTab:Toggle({
+    Title = gradient("Auto Bring Items", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Automatically bring all items to you",
+    Value = AutoBring,
+    Callback = function(state)
+        AutoBring = state
+        if state then
+            spawn(function()
+                while AutoBring do
+                    for _, item in pairs(ItemMap) do
+                        local char = game:GetService("Players").LocalPlayer.Character
+                        if char and char:FindFirstChild("HumanoidRootPart") then
+                            local hrp = char.HumanoidRootPart
+                            local cf = hrp.CFrame * CFrame.new(0, 0, -3)
+                            
+                            if item.PrimaryPart then
+                                item:SetPrimaryPartCFrame(cf)
+                            else
+                                item:PivotTo(cf)
+                            end
+                        end
+                    end
+                    task.wait(1)
+                end
+            end)
+        end
+    end
+})
+
+-- ========================
+-- РЕАЛИЗАЦИЯ ESP TAB
+-- ========================
+
+local ESP = {
+    Players = {
+        Enabled = false,
+        Highlight = false,
+        Names = false,
+        Distance = false,
+        Highlights = {},
+        Labels = {}
+    },
+    Mobs = {
+        Enabled = false,
+        Highlight = false,
+        Names = false,
+        Distance = false,
+        Highlights = {},
+        Labels = {},
+        MobNames = {"Bunny", "Wolf", "Bear", "Lost Child", "Cultist"} -- Список имен мобов
+    },
+    Items = {
+        Enabled = false,
+        Highlight = false,
+        Names = false,
+        Distance = false,
+        Highlights = {},
+        Labels = {}
+    }
+}
+
+-- Функция для создания Highlight
+local function createHighlight(obj, color)
+    if not obj or not obj.Parent then return end
+    
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "SNT_Highlight"
+    highlight.FillColor = color
+    highlight.OutlineColor = Color3.new(1, 1, 1)
+    highlight.FillTransparency = 0.5
+    highlight.OutlineTransparency = 0
+    highlight.Parent = obj
+    
+    return highlight
+end
+
+-- Функция для создания TextLabel
+local function createLabel(obj, text, color)
+    if not obj or not obj.Parent then return end
+    
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "SNT_Label"
+    billboard.Adornee = obj:IsA("BasePart") and obj or obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart
+    billboard.Size = UDim2.new(0, 200, 0, 50)
+    billboard.StudsOffset = Vector3.new(0, 3, 0)
+    billboard.AlwaysOnTop = true
+    
+    local label = Instance.new("TextLabel")
+    label.Text = text
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.Font = Enum.Font.SourceSansBold
+    label.TextSize = 20
+    label.TextColor3 = color
+    label.BackgroundTransparency = 1
+    label.Parent = billboard
+    
+    billboard.Parent = obj
+    
+    return billboard
+end
+
+-- Функция проверки, является ли объект мобом
+local function isMob(obj)
+    for _, mobName in ipairs(ESP.Mobs.MobNames) do
+        if string.find(obj.Name, mobName) then
+            return true
+        end
+    end
+    return false
+end
+
+-- Функция обновления ESP
+local function updateESP()
+    -- Очистка старых ESP
+    for _, category in pairs(ESP) do
+        for _, highlight in pairs(category.Highlights) do
+            if highlight and highlight.Parent then
+                highlight:Destroy()
+            end
+        end
+        category.Highlights = {}
+        
+        for _, label in pairs(category.Labels) do
+            if label and label.Parent then
+                label:Destroy()
+            end
+        end
+        category.Labels = {}
+    end
+
+    -- Игроки
+    if ESP.Players.Enabled then
+        for _, player in ipairs(game:GetService("Players"):GetPlayers()) do
+            if player ~= game:GetService("Players").LocalPlayer and player.Character then
+                local char = player.Character
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                
+                if hrp then
+                    -- Highlight
+                    if ESP.Players.Highlight then
+                        local highlight = createHighlight(char, Color3.fromRGB(0, 170, 255))
+                        table.insert(ESP.Players.Highlights, highlight)
+                    end
+                    
+                    -- Имя и дистанция
+                    local text = ""
+                    if ESP.Players.Names then
+                        text = player.Name
+                    end
+                    
+                    if ESP.Players.Distance then
+                        local distance = (hrp.Position - game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+                        text = text .. (text ~= "" and "\n" or "") .. math.floor(distance) .. "m"
+                    end
+                    
+                    if text ~= "" then
+                        local label = createLabel(hrp, text, Color3.fromRGB(0, 170, 255))
+                        table.insert(ESP.Players.Labels, label)
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Мобы (исправленная версия)
+    if ESP.Mobs.Enabled then
+        local mobsFolder = workspace:FindFirstChild("Characters")
+        if mobsFolder then
+            for _, mob in ipairs(mobsFolder:GetChildren()) do
+                if isMob(mob) and mob:FindFirstChild("HumanoidRootPart") then
+                    local hrp = mob.HumanoidRootPart
+                    
+                    -- Highlight
+                    if ESP.Mobs.Highlight then
+                        local highlight = createHighlight(mob, Color3.fromRGB(255, 50, 50))
+                        table.insert(ESP.Mobs.Highlights, highlight)
+                    end
+                    
+                    -- Имя и дистанция
+                    local text = ""
+                    if ESP.Mobs.Names then
+                        text = mob.Name
+                    end
+                    
+                    if ESP.Mobs.Distance and game:GetService("Players").LocalPlayer.Character then
+                        local playerHrp = game:GetService("Players").LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                        if playerHrp then
+                            local distance = (hrp.Position - playerHrp.Position).Magnitude
+                            text = text .. (text ~= "" and "\n" or "") .. math.floor(distance) .. "m"
+                        end
+                    end
+                    
+                    if text ~= "" then
+                        local label = createLabel(hrp, text, Color3.fromRGB(255, 50, 50))
+                        table.insert(ESP.Mobs.Labels, label)
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Предметы
+    if ESP.Items.Enabled then
+        local itemsFolder = workspace:FindFirstChild("Items")
+        if itemsFolder then
+            for _, item in ipairs(itemsFolder:GetChildren()) do
+                local primaryPart = item.PrimaryPart or item:FindFirstChildWhichIsA("BasePart")
+                
+                if primaryPart then
+                    -- Highlight
+                    if ESP.Items.Highlight then
+                        local highlight = createHighlight(item, Color3.fromRGB(50, 255, 50))
+                        table.insert(ESP.Items.Highlights, highlight)
+                    end
+                    
+                    -- Имя и дистанция
+                    local text = ""
+                    if ESP.Items.Names then
+                        text = item.Name
+                    end
+                    
+                    if ESP.Items.Distance then
+                        local distance = (primaryPart.Position - game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+                        text = text .. (text ~= "" and "\n" or "") .. math.floor(distance) .. "m"
+                    end
+                    
+                    if text ~= "" then
+                        local label = createLabel(primaryPart, text, Color3.fromRGB(50, 255, 50))
+                        table.insert(ESP.Items.Labels, label)
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- Секция для игроков
+EspTab:Paragraph({
+    Title = gradient("PLAYERS ESP", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "ESP settings for other players",
+    Image = "users",
+    ImageSize = 18,
+    Color = "White"
+})
+
+EspTab:Toggle({
+    Title = gradient("Enable Players ESP", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Toggle ESP for players",
+    Value = ESP.Players.Enabled,
+    Callback = function(state)
+        ESP.Players.Enabled = state
+        updateESP()
+    end
+})
+
+EspTab:Toggle({
+    Title = gradient("Players Highlight", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Highlight player characters",
+    Value = ESP.Players.Highlight,
+    Callback = function(state)
+        ESP.Players.Highlight = state
+        updateESP()
+    end
+})
+
+EspTab:Toggle({
+    Title = gradient("Players Names", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Show player names",
+    Value = ESP.Players.Names,
+    Callback = function(state)
+        ESP.Players.Names = state
+        updateESP()
+    end
+})
+
+EspTab:Toggle({
+    Title = gradient("Players Distance", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Show distance to players",
+    Value = ESP.Players.Distance,
+    Callback = function(state)
+        ESP.Players.Distance = state
+        updateESP()
+    end
+})
+
+-- Секция для мобов (исправленная)
+EspTab:Paragraph({
+    Title = gradient("MOBS ESP", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "ESP settings for mobs (Bunnies, Wolves, etc.)",
+    Image = "shield",
+    ImageSize = 18,
+    Color = "White"
+})
+
+EspTab:Toggle({
+    Title = gradient("Enable Mobs ESP", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Toggle ESP for mobs",
+    Value = ESP.Mobs.Enabled,
+    Callback = function(state)
+        ESP.Mobs.Enabled = state
+        updateESP()
+    end
+})
+
+EspTab:Toggle({
+    Title = gradient("Mobs Highlight", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Highlight mob characters",
+    Value = ESP.Mobs.Highlight,
+    Callback = function(state)
+        ESP.Mobs.Highlight = state
+        updateESP()
+    end
+})
+
+EspTab:Toggle({
+    Title = gradient("Mobs Names", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Show mob names",
+    Value = ESP.Mobs.Names,
+    Callback = function(state)
+        ESP.Mobs.Names = state
+        updateESP()
+    end
+})
+
+EspTab:Toggle({
+    Title = gradient("Mobs Distance", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Show distance to mobs",
+    Value = ESP.Mobs.Distance,
+    Callback = function(state)
+        ESP.Mobs.Distance = state
+        updateESP()
+    end
+})
+
+-- Секция для предметов
+EspTab:Paragraph({
+    Title = gradient("ITEMS ESP", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "ESP settings for items",
+    Image = "box",
+    ImageSize = 18,
+    Color = "White"
+})
+
+EspTab:Toggle({
+    Title = gradient("Enable Items ESP", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Toggle ESP for items",
+    Value = ESP.Items.Enabled,
+    Callback = function(state)
+        ESP.Items.Enabled = state
+        updateESP()
+    end
+})
+
+EspTab:Toggle({
+    Title = gradient("Items Highlight", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Highlight items",
+    Value = ESP.Items.Highlight,
+    Callback = function(state)
+        ESP.Items.Highlight = state
+        updateESP()
+    end
+})
+
+EspTab:Toggle({
+    Title = gradient("Items Names", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Show item names",
+    Value = ESP.Items.Names,
+    Callback = function(state)
+        ESP.Items.Names = state
+        updateESP()
+    end
+})
+
+EspTab:Toggle({
+    Title = gradient("Items Distance", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Show distance to items",
+    Value = ESP.Items.Distance,
+    Callback = function(state)
+        ESP.Items.Distance = state
+        updateESP()
+    end
+})
+
+-- Автообновление ESP
+game:GetService("RunService").Heartbeat:Connect(function()
+    if ESP.Players.Enabled or ESP.Mobs.Enabled or ESP.Items.Enabled then
+        updateESP()
+    end
+end)
+
+-- Кнопка для ручного обновления
+EspTab:Button({
+    Title = gradient("Refresh ESP", COLOR_PALETTE.Primary, COLOR_PALETTE.Accent),
+    Icon = "refresh-cw",
+    Callback = function()
+        updateESP()
+        WindUI:Notify({
+            Title = "ESP Updated",
+            Content = "ESP elements refreshed",
+            Duration = 1
+        })
+    end
+})
+
+-- ========================
+-- AUTOFARM TAB (UPDATED)
+-- ========================
+
+local Players     = game:GetService("Players")
+local Workspace   = game:GetService("Workspace")
+local Replicated  = game:GetService("ReplicatedStorage")
+local LP          = Players.LocalPlayer
+local Remotes     = Replicated:FindFirstChild("RemoteEvents") or Instance.new("Folder") -- safety stub
+
+-- ---------- Safe helpers ----------
+local function HRP(c)
+    c = c or LP.Character
+    return c and (c:FindFirstChild("HumanoidRootPart") or c:FindFirstChild("Torso")) or nil
+end
+
+local function playerCFrame()
+    local h = HRP()
+    return h and h.CFrame or CFrame.new()
+end
+
+local function pivotModelTo(m, cf)
+    if not m or not cf then return end
+    if m:IsA("Model") then
+        local ok = pcall(function()
+            m:PivotTo(cf)
+        end)
+        if not ok and m.PrimaryPart then
+            pcall(function() m:SetPrimaryPartCFrame(cf) end)
+        end
+    elseif m:IsA("BasePart") then
+        pcall(function() m.CFrame = cf end)
+    end
+end
+
+local function getMapNode(path)
+    local node = Workspace:FindFirstChild("Map")
+    for _, seg in ipairs(path) do
+        if not node then return nil end
+        node = node:FindFirstChild(seg)
+    end
+    return node
+end
+
+local FIRE_CF_FALLBACK     = CFrame.new(-0.072, 6.341, 0.061)
+local SCRAPPER_CF_FALLBACK = CFrame.new(21.342, 6.253, -5.447)
+
+local function getModelCFAndSize(m)
+    if not m then return nil, Vector3.new(2,2,2) end
+    if m:IsA("BasePart") then
+        return m.CFrame, m.Size
+    end
+    if m:IsA("Model") then
+        local ok, cf, size = pcall(function()
+            local _cf, _size = m:GetBoundingBox()
+            return _cf, _size
+        end)
+        if ok and cf then return cf, size end
+        if m.PrimaryPart then
+            return m.PrimaryPart.CFrame, m.PrimaryPart.Size
+        end
+    end
+    return nil, Vector3.new(2,2,2)
+end
+
+local function mainFireCFrame()
+    local n = getMapNode({ "Campground", "MainFire" })
+    if n then
+        local cf = nil
+        local ok = pcall(function()
+            if n:IsA("Model") then
+                cf = n.PrimaryPart and n.PrimaryPart.CFrame or ({n:GetBoundingBox()})[1]
+            else
+                cf = n.CFrame
+            end
+        end)
+        if ok and cf then return cf end
+    end
+    return FIRE_CF_FALLBACK
+end
+
+local function scrapperCFrame()
+    local n = getMapNode({ "Campground", "Scrapper" })
+    if n then
+        local cf = nil
+        local ok = pcall(function()
+            if n:IsA("Model") then
+                cf = n.PrimaryPart and n.PrimaryPart.CFrame or ({n:GetBoundingBox()})[1]
+            else
+                cf = n.CFrame
+            end
+        end)
+        if ok and cf then return cf end
+    end
+    return SCRAPPER_CF_FALLBACK
+end
+
+local function jitter(cf, r)
+    r = r or 0.35
+    return cf * CFrame.new((math.random()-0.5)*2*r, 0, (math.random()-0.5)*2*r)
+end
+
+local function toSet(list)
+    local s = {}
+    for _, v in ipairs(list or {}) do s[string.lower(v)] = true end
+    return s
+end
+
+local function nameHas(obj, token)
+    if not obj or not obj.Name then return false end
+    return string.find(string.lower(obj.Name), string.lower(token), 1, true) ~= nil
+end
+
+-- getNil support (executor dependent); fallback returns nil
+local function getNil(name, class)
+    if typeof(getnilinstances) == "function" then
+        for _, v in next, getnilinstances() do
+            if v.ClassName == class and string.lower(v.Name) == string.lower(name) then
+                return v
+            end
+        end
+    end
+    return nil
+end
+
+local function findByNameContains(container, token)
+    if not container then return nil end
+    local tkn = string.lower(token)
+    for _, ch in ipairs(container:GetChildren()) do
+        if string.find(string.lower(ch.Name), tkn, 1, true) then
+            return ch
+        end
+    end
+    return nil
+end
+
+-- Best Axe / Sack
+local AXE_PRIORITY  = { "Good Axe", "Old Axe", "Ice Axe" }
+local SACK_PRIORITY = { "Huge sack", "Good Sack", "Old Sack" }
+
+local function findBestAxe()
+    for _, nm in ipairs(AXE_PRIORITY) do
+        local inst = findByNameContains(LP, nm) or findByNameContains(LP:FindFirstChild("Inventory"), nm) or getNil(nm, "Model")
+        if inst then return inst end
+    end
+    return nil
+end
+
+local function findBestSack()
+    for _, nm in ipairs(SACK_PRIORITY) do
+        local inst = findByNameContains(LP, nm) or findByNameContains(LP:FindFirstChild("Inventory"), nm) or getNil(nm, "Model")
+        if inst then return inst end
+    end
+    return nil
+end
+
+local function tryStoreInBag(model)
+    local sack = findBestSack()
+    if not sack or not model then return false end
+    local ok = pcall(function()
+        local evt = Remotes:FindFirstChild("RequestBagStoreItem")
+        if evt then evt:InvokeServer(sack, model) end
+    end)
+    return ok
+end
+
+local function tryBurnItem(model)
+    local ok = pcall(function()
+        local burn = Remotes:FindFirstChild("RequestBurnItem") or Remotes:FindFirstChild("BurnItem") or Remotes:FindFirstChild("Burn")
+        if burn then burn:InvokeServer(model) end
+    end)
+    return ok
+end
+
+local function dropAbove(cf, model, extraY)
+    local _, size = getModelCFAndSize(model)
+    local h = math.clamp((size.Y or 4) * 1.5, 6, 14) + (extraY or 0)
+    return jitter(cf, 0.35) * CFrame.new(0, h, 0)
+end
+
+-- ========================
+-- WOOD FARMING
+-- ========================
+
+AutoFarmTab:Paragraph({
+    Title = gradient("LOG FARMING", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc  = "Remote-chop selected tree types. Optional: bring tree to you. Auto-collect logs via Remote.",
+    Image = "tree", ImageSize = 18, Color = "White"
+})
+
+local TREE_TYPES = { "Small Tree", "TreeBig", "TreeBig2", "TreeBig3" }
+local af_treeType = TREE_TYPES[1]
+
+AutoFarmTab:Dropdown({
+    Title = gradient("Tree Type", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Values = TREE_TYPES,
+    Value  = af_treeType,
+    Multi  = false,
+    AllowNone = false,
+    Callback = function(v) af_treeType = v or TREE_TYPES[1] end
+})
+
+-- Option A: bring tree to you (recommended, no player teleport)
+local af_bringTree = true
+AutoFarmTab:Toggle({
+    Title = gradient("Bring tree to me before chopping", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc  = "Pivot tree near you and hit remotely (safer, no player teleport).",
+    Value = af_bringTree,
+    Callback = function(state) af_bringTree = state end
+})
+
+-- Option B: teleport to tree (fallback)
+local af_tpToTree = false
+AutoFarmTab:Toggle({
+    Title = gradient("Teleport to tree (fallback)", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc  = "Only if needed; not recommended.",
+    Value = af_tpToTree,
+    Callback = function(state) af_tpToTree = state end
+})
+
+-- Auto collect logs (no player teleport; bring to you + Remote store)
+local af_collectLogs = true
+AutoFarmTab:Toggle({
+    Title = gradient("Auto Collect Logs", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc  = "Bring logs to you and store via Remote. No player teleport.",
+    Value = af_collectLogs,
+    Callback = function(state) af_collectLogs = state end
+})
+
+local TREE_DAMAGE_KEY = "3_9130026089"
+local af_autoWood = false
+
+local function treesOfType(kind)
+    local out = {}
+    local fol = Workspace:FindFirstChild("Map"); fol = fol and fol:FindFirstChild("Foliage")
+    if not fol then return out end
+    local look = string.lower(kind)
+    for _, node in ipairs(fol:GetChildren()) do
+        if node:IsA("Model") and string.find(string.lower(node.Name), look, 1, true) then
+            table.insert(out, node)
+        end
+    end
+    return out
+end
+
+local function chopTree(tree)
+    if not tree or not tree.Parent then return end
+    local axe = findBestAxe()
+    if not axe then
+        WindUI:Notify({ Title="Auto Wood", Content="Axe not found (Good/Old/Ice Axe).", Duration=2 })
+        return
+    end
+    if af_bringTree then
+        local pcf = playerCFrame()
+        pivotModelTo(tree, pcf * CFrame.new(0, 0, -3))
+        task.wait(0.05)
+    elseif af_tpToTree then
+        local tcf = ({getModelCFAndSize(tree)})[1]
+        if tcf then
+            local char = LP.Character
+            local h = HRP(char)
+            if char and h then
+                pcall(function()
+                    if char.PivotTo then char:PivotTo(tcf * CFrame.new(0, 3, 0)) else h.CFrame = tcf * CFrame.new(0, 3, 0) end
+                end)
+            end
+        end
+    end
+    -- hit until gone
+    while af_autoWood and tree and tree.Parent do
+        local cf = playerCFrame()
+        pcall(function()
+            local evt = Remotes:FindFirstChild("ToolDamageObject")
+            if evt then evt:InvokeServer(tree, axe, TREE_DAMAGE_KEY, cf) end
+        end)
+        task.wait(0.12)
+    end
+end
+
+-- Wood farm toggle
+AutoFarmTab:Toggle({
+    Title = gradient("Auto Wood Farm", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc  = "Remote-chop selected trees with chosen approach.",
+    Value = af_autoWood,
+    Callback = function(state)
+        af_autoWood = state
+        if state then
+            task.spawn(function()
+                while af_autoWood do
+                    local batch = treesOfType(af_treeType)
+                    if #batch == 0 then
+                        task.wait(1.2)
+                    else
+                        for _, tree in ipairs(batch) do
+                            if not af_autoWood then break end
+                            chopTree(tree)
+                            task.wait(0.05)
+                        end
+                    end
+                    task.wait(0.4)
+                end
+            end)
+            WindUI:Notify({ Title="Auto Wood", Content="Started.", Duration=2 })
+        else
+            WindUI:Notify({ Title="Auto Wood", Content="Stopped.", Duration=2 })
+        end
+    end
+})
+
+-- Background task: auto collect logs (if enabled)
+task.spawn(function()
+    while true do
+        if af_collectLogs then
+            local items = Workspace:FindFirstChild("Items")
+            if items then
+                for _, m in ipairs(items:GetChildren()) do
+                    if not af_collectLogs then break end
+                    if m:IsA("Model") and string.lower(m.Name) == "log" then
+                        local pcf = playerCFrame()
+                        pivotModelTo(m, pcf * CFrame.new(0, 0, -2.5))
+                        task.wait(0.03)
+                        if not tryStoreInBag(m) then
+                            -- retry once after slight nudge
+                            pivotModelTo(m, pcf * CFrame.new(0, 0, -1.8))
+                            task.wait(0.03)
+                            tryStoreInBag(m)
+                        end
+                        task.wait(0.05)
+                    end
+                end
+            end
+        end
+        task.wait(0.5)
+    end
+end)
+
+-- ========================
+-- AUTO FIRE (drop into fire)
+-- ========================
+
+AutoFarmTab:Paragraph({
+    Title = gradient("AUTO FIRE", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc  = "Drop selected items/characters above MainFire so they fall and burn reliably.",
+    Image = "flame", ImageSize = 18, Color = "White"
+})
+
+local FIRE_CHOICES = { "Cultist", "Crossbow Cultist", "Fuel Canister", "Coal", "Chair", "Log", "Oil Barrel" }
+local af_fireSelected = { "Fuel Canister", "Coal", "Log" }
+local af_fireSet = toSet(af_fireSelected)
+local af_autoFire = false
+local af_fireAlsoCallRemote = false
+
+AutoFarmTab:Dropdown({
+    Title = gradient("Targets", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Values = FIRE_CHOICES,
+    Value  = af_fireSelected,
+    Multi  = true,
+    AllowNone = true,
+    Callback = function(choice)
+        af_fireSelected = typeof(choice)=="table" and choice or {}
+        af_fireSet = toSet(af_fireSelected)
+        WindUI:Notify({ Title="Auto Fire", Content=("Selected: %d"):format(#af_fireSelected), Duration=1 })
+    end
+})
+
+AutoFarmTab:Toggle({
+    Title = gradient("Also call burn Remote", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc  = "Try RequestBurnItem in addition to dropping into fire.",
+    Value = af_fireAlsoCallRemote,
+    Callback = function(state) af_fireAlsoCallRemote = state end
+})
+
+AutoFarmTab:Toggle({
+    Title = gradient("Auto Fire", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc  = "Continuously drop selected targets into MainFire.",
+    Value = af_autoFire,
+    Callback = function(state)
+        af_autoFire = state
+        if state then
+            task.spawn(function()
+                while af_autoFire do
+                    local fcf = mainFireCFrame()
+                    -- Items
+                    local items = Workspace:FindFirstChild("Items")
+                    if items then
+                        for _, m in ipairs(items:GetChildren()) do
+                            if not af_autoFire then break end
+                            if m:IsA("Model") then
+                                for key, _ in pairs(af_fireSet) do
+                                    if nameHas(m, key) then
+                                        pivotModelTo(m, dropAbove(fcf, m, 0))
+                                        if af_fireAlsoCallRemote then tryBurnItem(m) end
+                                        task.wait(0.04)
+                                        break
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    -- Characters (Cultists)
+                    local chars = Workspace:FindFirstChild("Characters")
+                    if chars then
+                        for _, m in ipairs(chars:GetChildren()) do
+                            if not af_autoFire then break end
+                            if m:IsA("Model") then
+                                for key, _ in pairs(af_fireSet) do
+                                    if nameHas(m, key) then
+                                        pivotModelTo(m, dropAbove(fcf, m, 0))
+                                        task.wait(0.04)
+                                        break
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    task.wait(0.6)
+                end
+            end)
+            WindUI:Notify({ Title="Auto Fire", Content="Started.", Duration=2 })
+        else
+            WindUI:Notify({ Title="Auto Fire", Content="Stopped.", Duration=2 })
+        end
+    end
+})
+
+-- ========================
+-- SCRAP FARMING (drop above scrapper)
+-- ========================
+
+AutoFarmTab:Paragraph({
+    Title = gradient("SCRAP FARMING", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc  = "Drop selected items above Scrapper for consistent processing.",
+    Image = "recycle", ImageSize = 18, Color = "White"
+})
+
+local SCRAP_CHOICES = {
+    "Bolt","Cultist Gem","Cultist Prototype","Broken Fan","Gem of the Forest Fragment",
+    "Chair","Sheet Metal","Log","Washing Machine","Tyre","Sapling","Old Radio",
+    "Old Car Engine","Metal Chair","Anvil Back","Anvil Front","Broken Microwave"
+}
+local af_scrapSelected = { "Bolt","Sheet Metal","Log","Tyre" }
+local af_scrapSet = toSet(af_scrapSelected)
+local af_autoScrap = false
+
+AutoFarmTab:Dropdown({
+    Title = gradient("Targets", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Values = SCRAP_CHOICES,
+    Value  = af_scrapSelected,
+    Multi  = true,
+    AllowNone = true,
+    Callback = function(choice)
+        af_scrapSelected = typeof(choice)=="table" and choice or {}
+        af_scrapSet = toSet(af_scrapSelected)
+        WindUI:Notify({ Title="Auto Scrap", Content=("Selected: %d"):format(#af_scrapSelected), Duration=1 })
+    end
+})
+
+AutoFarmTab:Toggle({
+    Title = gradient("Auto Scrap", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc  = "Continuously drop selected items above Scrapper.",
+    Value = af_autoScrap,
+    Callback = function(state)
+        af_autoScrap = state
+        if state then
+            task.spawn(function()
+                while af_autoScrap do
+                    local scf = scrapperCFrame()
+                    local items = Workspace:FindFirstChild("Items")
+                    if items then
+                        for _, m in ipairs(items:GetChildren()) do
+                            if not af_autoScrap then break end
+                            if m:IsA("Model") then
+                                for key, _ in pairs(af_scrapSet) do
+                                    if nameHas(m, key) then
+                                        pivotModelTo(m, dropAbove(scf, m, 0))
+                                        task.wait(0.04)
+                                        break
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    task.wait(0.7)
+                end
+            end)
+            WindUI:Notify({ Title="Auto Scrap", Content="Started.", Duration=2 })
+        else
+            WindUI:Notify({ Title="Auto Scrap", Content="Stopped.", Duration=2 })
+        end
+    end
+})
+
+-- ========================
+-- AUTO COOK (event-driven on spawn)
+-- ========================
+
+AutoFarmTab:Paragraph({
+    Title = gradient("AUTO COOK", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc  = "Immediately drop new raw Morsel/Steak above fire when they appear.",
+    Image = "chef-hat", ImageSize = 18, Color = "White"
+})
+
+local function isRawFood(nm)
+    local ln = string.lower(nm or "")
+    if string.find(ln, "cooked", 1, true) then return false end
+    return string.find(ln, "morsel", 1, true) or string.find(ln, "steak", 1, true)
+end
+
+local autoCookEnabled = false
+local autoCookConn = nil
+local cookedSeen = {} -- debugId -> true
+
+local function handleCookCandidate(m)
+    if not m or not m.Parent then return end
+    if not isRawFood(m.Name) then return end
+    local id = nil
+    pcall(function() id = m:GetDebugId() end)
+    if id and cookedSeen[id] then return end
+    local fcf = mainFireCFrame()
+    pivotModelTo(m, dropAbove(fcf, m, 0))
+    cookedSeen[id or tostring(m)] = true
+end
+
+AutoFarmTab:Toggle({
+    Title = gradient("Auto Cook", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc  = "Watch workspace for new raw foods and cook them.",
+    Value = autoCookEnabled,
+    Callback = function(state)
+        autoCookEnabled = state
+        if state then
+            -- initial sweep
+            local items = Workspace:FindFirstChild("Items")
+            if items then
+                for _, m in ipairs(items:GetChildren()) do
+                    if m:IsA("Model") and isRawFood(m.Name) then
+                        handleCookCandidate(m)
+                        task.wait(0.02)
+                    end
+                end
+            end
+            -- live listener
+            if items and not autoCookConn then
+                autoCookConn = items.ChildAdded:Connect(function(ch)
+                    task.wait(0.02)
+                    if ch and ch:IsA("Model") then
+                        handleCookCandidate(ch)
+                    end
+                end)
+            end
+            WindUI:Notify({ Title="Auto Cook", Content="Enabled.", Duration=2 })
+        else
+            if autoCookConn then autoCookConn:Disconnect() autoCookConn = nil end
+            WindUI:Notify({ Title="Auto Cook", Content="Disabled.", Duration=2 })
+        end
+    end
+})
+
+-- ========================
+-- AUTO EAT (robust matching)
+-- ========================
+
+AutoFarmTab:Paragraph({
+    Title = gradient("AUTO EAT", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc  = "Eats selected foods using substring matching (handles variants like Steak2, Morsel3).",
+    Image = "utensils", ImageSize = 18, Color = "White"
+})
+
+local EAT_CHOICES = { "Cooked Steak", "Cooked Morsel", "Cake", "Carrot", "Apple", "Steak", "Morsel" }
+local af_eatSelected = { "Cooked Steak", "Cooked Morsel", "Cake", "Carrot", "Apple" }
+local af_eatSet = toSet(af_eatSelected)
+local af_autoEat = false
+
+AutoFarmTab:Dropdown({
+    Title = gradient("Food", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Values = EAT_CHOICES,
+    Value  = af_eatSelected,
+    Multi  = true,
+    AllowNone = true,
+    Callback = function(choice)
+        af_eatSelected = typeof(choice)=="table" and choice or {}
+        af_eatSet = toSet(af_eatSelected)
+        WindUI:Notify({ Title="Auto Eat", Content=("Selected: %d"):format(#af_eatSelected), Duration=1 })
+    end
+})
+
+-- Priority prefers cooked first, then raw, then others
+local EAT_PRIORITY = { "cooked steak", "cooked morsel", "cake", "carrot", "apple", "steak", "morsel" }
+
+local function findInContainerByToken(container, token)
+    if not container then return nil end
+    local tok = string.lower(token)
+    local best = nil
+    for _, it in ipairs(container:GetChildren()) do
+        local nm = string.lower(it.Name or "")
+        if string.find(nm, tok, 1, true) then
+            -- prefer exact cooked match when token contains 'cooked'
+            if string.find(tok, "cooked", 1, true) then
+                if string.find(nm, "cooked", 1, true) then return it end
+            end
+            best = best or it
+        end
+    end
+    return best
+end
+
+local function consumeByToken(token)
+    local tok = string.lower(token)
+
+    -- 1) ItemBag
+    local bag = LP:FindFirstChild("ItemBag")
+    local it = findInContainerByToken(bag, tok)
+    if it then
+        local ok = pcall(function()
+            local evt = Remotes:FindFirstChild("RequestConsumeItem")
+            if evt then evt:InvokeServer(it) end
+        end)
+        if ok then return true end
+    end
+
+    -- 2) getNil ghost
+    local ghost = getNil(token, "Model") or getNil(string.gsub(token, "cooked ", ""), "Model")
+    if ghost then
+        local ok = pcall(function()
+            local evt = Remotes:FindFirstChild("RequestConsumeItem")
+            if evt then evt:InvokeServer(ghost) end
+        end)
+        if ok then return true end
+    end
+
+    -- 3) World items
+    local items = Workspace:FindFirstChild("Items")
+    if items then
+        -- two passes: prefer exact cooked if token has cooked
+        local passList = {}
+        if string.find(tok, "cooked", 1, true) then
+            passList = { function(nm) return string.find(nm, "cooked", 1, true) and string.find(nm, string.gsub(tok, "cooked ", ""), 1, true) end,
+                         function(nm) return string.find(nm, tok, 1, true) end }
+        else
+            passList = { function(nm) return string.find(nm, tok, 1, true) end }
+        end
+        for _, pass in ipairs(passList) do
+            for _, m in ipairs(items:GetChildren()) do
+                local nm = string.lower(m.Name or "")
+                if m:IsA("Model") and pass(nm) then
+                    local ok = pcall(function()
+                        local evt = Remotes:FindFirstChild("RequestConsumeItem")
+                        if evt then evt:InvokeServer(m) end
+                    end)
+                    if not ok then
+                        -- pull to player then retry once
+                        pivotModelTo(m, playerCFrame() * CFrame.new(0, 0, -2.2))
+                        task.wait(0.05)
+                        pcall(function()
+                            local evt = Remotes:FindFirstChild("RequestConsumeItem")
+                            if evt then evt:InvokeServer(m) end
+                        end)
+                    end
+                    return true
+                end
+            end
+        end
+    end
+
+    return false
+end
+
+AutoFarmTab:Toggle({
+    Title = gradient("Auto Eat", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc  = "Continuously tries to consume selected foods by priority.",
+    Value = af_autoEat,
+    Callback = function(state)
+        af_autoEat = state
+        if state then
+            task.spawn(function()
+                local idleBackoff = 1.5
+                while af_autoEat do
+                    local ate = false
+                    for _, tok in ipairs(EAT_PRIORITY) do
+                        if not af_autoEat then break end
+                        if af_eatSet[tok] then
+                            if consumeByToken(tok) then
+                                ate = true
+                                task.wait(0.25)
+                            end
+                        end
+                    end
+                    if not af_autoEat then break end
+                    if ate then
+                        idleBackoff = 1.5
+                        task.wait(0.8)
+                    else
+                        task.wait(idleBackoff)
+                        idleBackoff = math.clamp(idleBackoff + 0.5, 1.5, 6)
+                    end
+                end
+            end)
+            WindUI:Notify({ Title="Auto Eat", Content="Started.", Duration=2 })
+        else
+            WindUI:Notify({ Title="Auto Eat", Content="Stopped.", Duration=2 })
+        end
+    end
+})
+
+AutoFarmTab:Button({
+    Title = "Eat selected now",
+    Icon  = "play",
+    Callback = function()
+        local attempts = 0
+        for _, tok in ipairs(EAT_PRIORITY) do
+            if af_eatSet[tok] then
+                if consumeByToken(tok) then attempts += 1 end
+            end
+        end
+        WindUI:Notify({ Title="Eat Now", Content=("Consumed attempts: %d"):format(attempts), Duration=2 })
+    end
+})
+
+-- ========================
+-- STOP ALL
+-- ========================
+
+AutoFarmTab:Button({
+    Title   = gradient("Stop all autofarms", COLOR_PALETTE.Primary, COLOR_PALETTE.Danger),
+    Icon    = "octagon",
+    Callback = function()
+        af_autoWood    = false
+        af_collectLogs = false
+        af_autoFire    = false
+        af_autoScrap   = false
+        af_autoEat     = false
+        if autoCookConn then autoCookConn:Disconnect() autoCookConn = nil end
+        autoCookEnabled = false
+        WindUI:Notify({ Title="Auto Farm", Content="All processes stopped.", Duration=2 })
+    end
+})
