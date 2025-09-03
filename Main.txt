@@ -1,0 +1,412 @@
+local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+
+-- Настройки темы
+WindUI.TransparencyValue = 0.15
+
+WindUI:AddTheme({
+    Name = "SNTTheme",
+    Accent = "#18181b",
+    Dialog = "#18181b",
+    Outline = "#FFFFFF",
+    Text = "#FFFFFF",
+    Placeholder = "#000000",
+    Background = "#0e0e10",
+    Button = "#52525b",
+    Icon = "#00f7ff",
+})
+
+WindUI:SetTheme("SNTTheme")
+
+-- Цветовая палитра (серый, черный, белый, синий)
+local COLOR_PALETTE = {
+    Primary   = Color3.fromHex("#3498db"),  -- Синий
+    Secondary = Color3.fromHex("#2c3e50"),  -- Темно-синий
+    Accent    = Color3.fromHex("#1abc9c"),  -- Бирюзовый
+    Dark      = Color3.fromHex("#1a1a1a"),  -- Почти черный
+    Text      = Color3.fromHex("#ecf0f1"),  -- Светло-серый
+    Danger    = Color3.fromHex("#e74c3c"),  -- Красный
+    LightGray = Color3.fromHex("#bdc3c7"),  -- Серый
+    DarkGray  = Color3.fromHex("#7f8c8d"),  -- Темно-серый
+    White     = Color3.fromHex("#ffffff")   -- Белый
+}
+
+-- Функция градиента
+local function gradient(text, startColor, endColor)
+    local result = ""
+    for i = 1, #text do
+        local t = (i - 1) / (#text - 1)
+        local r = math.floor((startColor.R + (endColor.R - startColor.R) * t) * 255)
+        local g = math.floor((startColor.G + (endColor.G - startColor.G) * t) * 255)
+        local b = math.floor((startColor.B + (endColor.B - startColor.B) * t) * 255)
+        result = result .. string.format('<font color="rgb(%d,%d,%d)">%s</font>', r, g, b, text:sub(i, i))
+    end
+    return result
+end
+
+-- Создание окна
+local Window = WindUI:CreateWindow({
+    Title = gradient("SNT HUB [Beta]", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Icon = "infinity",
+    Author = gradient("99 Nights in the Forest", COLOR_PALETTE.LightGray, COLOR_PALETTE.Text),
+    Folder = "SNT_HUB",
+    Size = UDim2.fromOffset(400, 240),
+    Theme = "SNTTheme",
+    Background = WindUI:Gradient({
+        ["0"]   = { Color = COLOR_PALETTE.Dark,      Transparency = 0 },
+        ["50"]  = { Color = COLOR_PALETTE.Secondary, Transparency = 0 },
+        ["100"] = { Color = Color3.fromHex("#000000"), Transparency = 0 },
+    }, { Rotation = 150 }),
+    User = {
+        Enabled = true,
+        Anonymous = false,
+        Username = "Snowt_Scripter",
+        UserTag = "@Snowt_Scripter",
+        Callback = function()
+            WindUI:Notify({
+                Title = "User Profile",
+                Content = "Telegram: @Snowt_TG",
+                Duration = 3
+            })
+        end
+    },
+    SideBarWidth = 200,
+    ScrollBarEnabled = true,
+    CornerRadius = UDim.new(0, 14),
+    DropShadow = true
+})
+
+-- Секции
+local MainSection = Window:Section({ 
+    Title = gradient("MAIN", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Opened = true 
+})
+
+local GameSection = Window:Section({ 
+    Title = gradient("GAME", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Opened = true
+})
+
+local SettingsSection = Window:Section({ 
+    Title = gradient("SETTINGS", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Opened = true
+})
+
+-- Табы
+local InfoTab       = MainSection:Tab({ Title = gradient("INFO", COLOR_PALETTE.Text, COLOR_PALETTE.LightGray), Icon = "info" })
+local SocialsTab    = MainSection:Tab({ Title = gradient("SOCIALS", COLOR_PALETTE.Text, COLOR_PALETTE.LightGray), Icon = "users" })
+local CharacterTab  = MainSection:Tab({ Title = gradient("CHARACTER", COLOR_PALETTE.Text, COLOR_PALETTE.LightGray), Icon = "user" })
+
+local TeleportTab = GameSection:Tab({ Title = gradient("TELEPORT", COLOR_PALETTE.Text, COLOR_PALETTE.LightGray), Icon = "rocket" })
+local ChestTab = GameSection:Tab({ Title = gradient("CHEST", COLOR_PALETTE.Text, COLOR_PALETTE.LightGray), Icon = "key" })
+local ItemsTab = GameSection:Tab({ Title = gradient("ITEMS", COLOR_PALETTE.Text, COLOR_PALETTE.LightGray), Icon = "box" })
+local EspTab = GameSection:Tab({ Title = gradient("ESP", COLOR_PALETTE.Text, COLOR_PALETTE.LightGray), Icon = "eye" })
+local AutoFarmTab = GameSection:Tab({ Title = gradient("AUTOFARM", COLOR_PALETTE.Text, COLOR_PALETTE.LightGray), Icon = "plus" })
+local CombatTab = GameSection:Tab({ Title = gradient("COMBAT", COLOR_PALETTE.Text, COLOR_PALETTE.LightGray), Icon = "sword" })
+
+local GameSettingsTab = SettingsSection:Tab({ Title = gradient("GAME SETTINGS", COLOR_PALETTE.Text, COLOR_PALETTE.LightGray), Icon = "settings" })
+local ServerTab       = SettingsSection:Tab({ Title = gradient("SERVER", COLOR_PALETTE.Text, COLOR_PALETTE.LightGray), Icon = "server" })
+local AutoExecuteTab  = SettingsSection:Tab({ Title = gradient("AUTO EXECUTE", COLOR_PALETTE.Text, COLOR_PALETTE.LightGray), Icon = "play" })
+
+-- =====================
+-- РЕАЛИЗАЦИЯ INFO TAB
+-- =====================
+
+local FpsParagraph, PingParagraph, PlayersParagraph, GameParagraph
+
+local frameCount = 0
+local lastTime = tick()
+local currentFPS = 0
+
+game:GetService("RunService").RenderStepped:Connect(function()
+    frameCount += 1
+end)
+
+-- Функция для получения FPS
+local function updateFPS()
+    local now = tick()
+    local delta = now - lastTime
+
+    if delta >= 1 then
+        currentFPS = frameCount / delta
+        frameCount = 0
+        lastTime = now
+    end
+
+    return math.floor(currentFPS)
+end
+
+-- Создание элементов Info Tab
+FpsParagraph = InfoTab:Paragraph({
+    Title     = function() 
+        local fps = updateFPS() or 0
+        return gradient("FPS: "..fps, COLOR_PALETTE.Primary, fps > 60 and COLOR_PALETTE.Accent or COLOR_PALETTE.Danger)
+    end,
+    Desc      = function()
+        local fps = updateFPS() or 0
+        return fps > 60 and "Excellent performance" or "Low performance"
+    end,
+    Image     = "activity",
+    ImageSize = 20,
+    Color     = "White"
+})
+
+PingParagraph = InfoTab:Paragraph({
+    Title     = function()
+        local ping = math.random(30, 120)
+        return gradient("PING: "..ping.."ms", COLOR_PALETTE.Primary, ping < 80 and COLOR_PALETTE.Accent or COLOR_PALETTE.Danger)
+    end,
+    Desc      = function()
+        local ping = math.random(30, 120)
+        return ping < 80 and "Good connection" or "High latency"
+    end,
+    Image     = "signal",
+    ImageSize = 20,
+    Color     = "White"
+})
+
+PlayersParagraph = InfoTab:Paragraph({
+    Title     = function()
+        local players = #game:GetService("Players"):GetPlayers()
+        local maxPlayers = game:GetService("Players").MaxPlayers
+        return gradient("PLAYERS: "..players.."/"..maxPlayers, COLOR_PALETTE.Primary, COLOR_PALETTE.Text)
+    end,
+    Desc      = "Currently in server",
+    Image     = "users",
+    ImageSize = 20,
+    Color     = "White"
+})
+
+GameParagraph = InfoTab:Paragraph({
+    Title     = function()
+        local gameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
+        return gradient(gameName, COLOR_PALETTE.Primary, COLOR_PALETTE.Text)
+    end,
+    Desc      = "Current game",
+    Image     = "gamepad",
+    ImageSize = 20,
+    Color     = "White"
+})
+
+-- Функция для обновления информации
+local function updateInfo()
+    FpsParagraph:Update()
+    PingParagraph:Update()
+    PlayersParagraph:Update()
+    GameParagraph:Update()
+end
+
+-- Кнопка обновления
+InfoTab:Button({
+    Title = gradient("Refresh Info", COLOR_PALETTE.Primary, COLOR_PALETTE.Accent),
+    Icon = "refresh-cw",
+    Callback = function()
+        updateInfo()
+        WindUI:Notify({
+            Title = "Info Updated",
+            Content = "Game information refreshed",
+            Duration = 1
+        })
+    end
+})
+
+-- Первичная инициализация
+updateInfo()
+
+-- Автообновление каждую секунду
+spawn(function()
+    while wait(1) do
+        updateInfo()
+    end
+end)
+
+-- ========================
+-- РЕАЛИЗАЦИЯ SOCIALS TAB
+-- ========================
+
+-- TikTok
+SocialsTab:Button({
+    Title    = gradient("TikTok", COLOR_PALETTE.Primary, COLOR_PALETTE.Accent),
+    Desc     = "Copy link to my TikTok",
+    Icon     = "copy",
+    Callback = function()
+        setclipboard("https://www.tiktok.com/@snowt.scripts?_t=ZT-8yhrbnIUFLL&_r=1")
+        WindUI:Notify({
+            Title   = "Link Copied",
+            Content = "TikTok link copied to clipboard",
+            Duration = 2
+        })
+    end
+})
+
+-- YouTube
+SocialsTab:Button({
+    Title    = gradient("YouTube", COLOR_PALETTE.Primary, COLOR_PALETTE.Accent),
+    Desc     = "Copy link to my YouTube",
+    Icon     = "copy",
+    Callback = function()
+        setclipboard("https://youtube.com/@snowt_team?si=AmXDJj0qFQB-dzhv")
+        WindUI:Notify({
+            Title   = "Link Copied",
+            Content = "YouTube link copied to clipboard",
+            Duration = 2
+        })
+    end
+})
+
+-- Telegram
+SocialsTab:Button({
+    Title    = gradient("Telegram", COLOR_PALETTE.Primary, COLOR_PALETTE.Accent),
+    Desc     = "Copy link to my Telegram",
+    Icon     = "copy",
+    Callback = function()
+        setclipboard("https://t.me/snowtscripts")
+        WindUI:Notify({
+            Title   = "Link Copied",
+            Content = "Telegram link copied to clipboard",
+            Duration = 2
+        })
+    end
+})
+
+-- ========================
+-- РЕАЛИЗАЦИЯ CHARACTER TAB
+-- ========================
+
+-- Переменные для хранения состояний
+local walkspeed = 16
+local jumpPower = 50
+local gravity = 196.2
+local noclip = false
+local infiniteJump = false
+
+-- Функция для применения изменений к персонажу
+local function updateCharacter()
+    local character = game:GetService("Players").LocalPlayer.Character
+    if character and character:FindFirstChild("Humanoid") then
+        character.Humanoid.WalkSpeed = walkspeed
+        character.Humanoid.JumpPower = jumpPower
+    end
+    game:GetService("Workspace").Gravity = gravity
+end
+
+-- Slider для скорости передвижения
+CharacterTab:Slider({
+    Title = gradient("WalkSpeed", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Set movement speed (16 is default)",
+    Value = { Min = 0, Max = 200, Default = walkspeed },
+    Callback = function(value)
+        walkspeed = value
+        updateCharacter()
+    end
+})
+
+-- Slider для силы прыжка
+CharacterTab:Slider({
+    Title = gradient("Jump Power", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Set jump height (50 is default)",
+    Value = { Min = 0, Max = 200, Default = jumpPower },
+    Callback = function(value)
+        jumpPower = value
+        updateCharacter()
+    end
+})
+
+-- Slider для гравитации
+CharacterTab:Slider({
+    Title = gradient("Gravity", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Set world gravity (196.2 is default)",
+    Value = { Min = 0, Max = 500, Default = gravity },
+    Callback = function(value)
+        gravity = value
+        updateCharacter()
+    end
+})
+
+-- Toggle для Noclip
+CharacterTab:Toggle({
+    Title = gradient("Noclip", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Walk through walls",
+    Value = noclip,
+    Callback = function(state)
+        noclip = state
+        if state then
+            local noclipLoop
+            noclipLoop = game:GetService("RunService").Stepped:Connect(function()
+                if game:GetService("Players").LocalPlayer.Character then
+                    for _, part in pairs(game:GetService("Players").LocalPlayer.Character:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = false
+                        end
+                    end
+                end
+            end)
+            _G.NoclipLoop = noclipLoop
+        else
+            if _G.NoclipLoop then
+                _G.NoclipLoop:Disconnect()
+            end
+        end
+    end
+})
+
+-- Toggle для бесконечных прыжков
+CharacterTab:Toggle({
+    Title = gradient("Infinite Jump", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Jump in mid-air",
+    Value = infiniteJump,
+    Callback = function(state)
+        infiniteJump = state
+        if state then
+            local connection
+            connection = game:GetService("UserInputService").JumpRequest:Connect(function()
+                if game:GetService("Players").LocalPlayer.Character then
+                    game:GetService("Players").LocalPlayer.Character.Humanoid:ChangeState("Jumping")
+                end
+            end)
+            _G.InfiniteJumpConnection = connection
+        else
+            if _G.InfiniteJumpConnection then
+                _G.InfiniteJumpConnection:Disconnect()
+            end
+        end
+    end
+})
+
+-- Кнопка сброса настроек
+CharacterTab:Button({
+    Title = gradient("Reset to Default", COLOR_PALETTE.Primary, COLOR_PALETTE.Accent),
+    Icon = "refresh-ccw",
+    Callback = function()
+        walkspeed = 16
+        jumpPower = 50
+        gravity = 196.2
+        noclip = false
+        infiniteJump = false
+        
+        updateCharacter()
+        
+        if _G.NoclipLoop then
+            _G.NoclipLoop:Disconnect()
+        end
+        
+        if _G.InfiniteJumpConnection then
+            _G.InfiniteJumpConnection:Disconnect()
+        end
+        
+        WindUI:Notify({
+            Title = "Reset Complete",
+            Content = "All settings reset to default",
+            Duration = 2
+        })
+    end
+})
+
+-- Кнопка переключения темы
+Window:CreateTopbarButton("theme-switcher", "moon", function()
+    WindUI:SetTheme(WindUI:GetCurrentTheme() == "Dark" and "Light" or "Dark")
+    WindUI:Notify({
+        Title = "Theme Changed",
+        Content = "Current theme: "..WindUI:GetCurrentTheme(),
+        Duration = 2
+    })
+end, 990)
