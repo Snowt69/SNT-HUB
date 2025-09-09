@@ -1,0 +1,1469 @@
+local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+
+-- Переменные
+local isSurvivorHighlightActive = false
+local isKillerHighlightActive = false
+local isToolHighlightActive = false
+local isGeneratorHighlightActive = false
+local isCorruptNatureEspActive = false
+local isSurvivorUtilEspActive = false
+local runAutoGen = false
+local autoGenDelay = 2.5
+local autoGenDebounce = {}
+
+-- Настройки темы
+WindUI.TransparencyValue = 0.15
+
+WindUI:AddTheme({
+    Name = "SNTTheme",
+    Accent = "#18181b",
+    Dialog = "#18181b",
+    Outline = "#FFFFFF",
+    Text = "#FFFFFF",
+    Placeholder = "#000000",
+    Background = "#0e0e10",
+    Button = "#52525b",
+    Icon = "#00f7ff",
+})
+
+WindUI:SetTheme("SNTTheme")
+
+-- Цветовая палитра (серый, черный, белый, синий)
+local COLOR_PALETTE = {
+    Primary   = Color3.fromHex("#3498db"),  -- Синий
+    Secondary = Color3.fromHex("#2c3e50"),  -- Темно-синий
+    Accent    = Color3.fromHex("#1abc9c"),  -- Бирюзовый
+    Dark      = Color3.fromHex("#1a1a1a"),  -- Почти черный
+    Text      = Color3.fromHex("#ecf0f1"),  -- Светло-серый
+    Danger    = Color3.fromHex("#e74c3c"),  -- Красный
+    LightGray = Color3.fromHex("#bdc3c7"),  -- Серый
+    DarkGray  = Color3.fromHex("#7f8c8d"),  -- Темно-серый
+    White     = Color3.fromHex("#ffffff")   -- Белый
+}
+
+-- Функция градиента
+local function gradient(text, startColor, endColor)
+    local result = ""
+    for i = 1, #text do
+        local t = (i - 1) / (#text - 1)
+        local r = math.floor((startColor.R + (endColor.R - startColor.R) * t) * 255)
+        local g = math.floor((startColor.G + (endColor.G - startColor.G) * t) * 255)
+        local b = math.floor((startColor.B + (endColor.B - startColor.B) * t) * 255)
+        result = result .. string.format('<font color="rgb(%d,%d,%d)">%s</font>', r, g, b, text:sub(i, i))
+    end
+    return result
+end
+
+-- Создание окна
+local Window = WindUI:CreateWindow({
+    Title = gradient("SNT HUB", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Icon = "infinity",
+    Author = gradient("Forsaken", COLOR_PALETTE.LightGray, COLOR_PALETTE.Text),
+    Folder = "SNT_HUB",
+    Size = UDim2.fromOffset(400, 240),
+    Theme = "SNTTheme",
+    Background = WindUI:Gradient({
+        ["0"]   = { Color = COLOR_PALETTE.Dark,      Transparency = 0 },
+        ["50"]  = { Color = COLOR_PALETTE.Secondary, Transparency = 0 },
+        ["100"] = { Color = Color3.fromHex("#000000"), Transparency = 0 },
+    }, { Rotation = 150 }),
+    User = {
+        Enabled = true,
+        Anonymous = false,
+        Username = "Snowt_Scripter",
+        UserTag = "@Snowt_Scripter",
+        Callback = function()
+            WindUI:Notify({
+                Title = "User Profile",
+                Content = "This is you!",
+                Duration = 3
+            })
+        end
+    },
+    SideBarWidth = 200,
+    ScrollBarEnabled = true,
+    CornerRadius = UDim.new(0, 14),
+    DropShadow = true
+})
+
+-- Секции
+local MainSection = Window:Section({ 
+    Title = gradient("MAIN", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Opened = true 
+})
+
+local GameSection = Window:Section({ 
+    Title = gradient("GAME", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Opened = true
+})
+
+local SettingsSection = Window:Section({ 
+    Title = gradient("SETTINGS", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Opened = true
+})
+
+-- Табы
+local InfoTab       = MainSection:Tab({ Title = "INFO", Icon = "info" })
+local SocialsTab    = MainSection:Tab({ Title = "SOCIALS", Icon = "users" })
+local CharacterTab  = MainSection:Tab({ Title = "CHARACTER", Icon = "user" })
+
+local TeleportTab = GameSection:Tab({ Title = "TELEPORT", Icon = "rocket" })
+local EspTab = GameSection:Tab({ Title = "ESP", Icon = "eye" })
+local AutoFarmTab = GameSection:Tab({ Title = "AUTOFARM", Icon = "plus" })
+local KillerTab = GameSection:Tab({ Title = "KILLER", Icon = "sword" })
+
+local GameSettingsTab = SettingsSection:Tab({ Title = "GAME SETTINGS", Icon = "settings" })
+local ServerTab       = SettingsSection:Tab({ Title = "SERVER", Icon = "server" })
+local AutoExecuteTab  = SettingsSection:Tab({ Title = "AUTO EXECUTE", Icon = "play" })
+
+-- =====================
+-- РЕАЛИЗАЦИЯ INFO TAB
+-- =====================
+
+local FpsParagraph, PingParagraph, PlayersParagraph, GameParagraph
+
+local frameCount = 0
+local lastTime = tick()
+local currentFPS = 0
+
+game:GetService("RunService").RenderStepped:Connect(function()
+    frameCount += 1
+end)
+
+
+-- Функция для получения FPS
+local function updateFPS()
+    local now = tick()
+    local delta = now - lastTime
+
+    if delta >= 1 then
+        currentFPS = frameCount / delta
+        frameCount = 0
+        lastTime = now
+    end
+
+    return math.floor(currentFPS)
+end
+
+-- Создание элементов Info Tab
+FpsParagraph = InfoTab:Paragraph({
+    Title     = gradient("FPS: --",    COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc      = "Loading...",
+    Image     = "activity",
+    ImageSize = 20,
+    Color     = "White"
+})
+
+PingParagraph = InfoTab:Paragraph({
+    Title     = gradient("PING: --",   COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc      = "Loading...",
+    Image     = "signal",
+    ImageSize = 20,
+    Color     = "White"
+})
+
+PlayersParagraph = InfoTab:Paragraph({
+    Title     = gradient("PLAYERS: --", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc      = "Loading...",
+    Image     = "users",
+    ImageSize = 20,
+    Color     = "White"
+})
+
+GameParagraph = InfoTab:Paragraph({
+    Title     = gradient("GAME: --",   COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc      = "Loading...",
+    Image     = "gamepad",
+    ImageSize = 20,
+    Color     = "White"
+})
+
+-- Функция для обновления информации
+local function updateInfo()
+    -- Получаем FPS
+    local fps = updateFPS() or 0
+
+    -- Получаем Ping (заглушка)
+    local ping = math.random(30, 120)
+
+    -- Получаем информацию об игроках
+    local players    = #game:GetService("Players"):GetPlayers()
+    local maxPlayers = game:GetService("Players").MaxPlayers
+
+    -- Обновляем Paragraph’ы
+    FpsParagraph:SetTitle(gradient("FPS: "..fps,  COLOR_PALETTE.Primary, fps > 60 and COLOR_PALETTE.Accent or COLOR_PALETTE.Danger))
+    FpsParagraph:SetDesc(fps > 60 and "Excellent performance" or "Low performance")
+
+    PingParagraph:SetTitle(gradient("PING: "..ping.."ms", COLOR_PALETTE.Primary, ping < 80 and COLOR_PALETTE.Accent or COLOR_PALETTE.Danger))
+    PingParagraph:SetDesc(ping < 80 and "Good connection" or "High latency")
+
+    PlayersParagraph:SetTitle(gradient("PLAYERS: "..players.."/"..maxPlayers, COLOR_PALETTE.Primary, COLOR_PALETTE.Text))
+    PlayersParagraph:SetDesc("Currently in server")
+
+    GameParagraph:SetTitle(gradient(game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name, COLOR_PALETTE.Primary, COLOR_PALETTE.Text))
+    GameParagraph:SetDesc("Current game")
+end
+
+
+-- Кнопка обновления
+InfoTab:Button({
+    Title = gradient("Refresh Info", COLOR_PALETTE.Primary, COLOR_PALETTE.Accent),
+    Icon = "refresh-cw",
+    Callback = function()
+        updateInfo()
+        WindUI:Notify({
+            Title = "Info Updated",
+            Content = "Game information refreshed",
+            Duration = 1
+        })
+    end
+})
+
+-- Первичная инициализация
+updateInfo()
+
+-- Автообновление каждую секунду
+spawn(function()
+    while wait(1) do
+        updateInfo()
+    end
+end)
+
+-- ========================
+-- РЕАЛИЗАЦИЯ SOCIALS TAB
+-- ========================
+
+-- TikTok
+local TikTokParagraph = SocialsTab:Paragraph({
+    Title     = gradient("My TikTok", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc      = "Please join to my TikTok account",
+    Image     = "video",
+    ImageSize = 20,
+    Color     = "White"
+})
+
+SocialsTab:Button({
+    Title    = gradient("TikTok", COLOR_PALETTE.Primary, COLOR_PALETTE.Accent),
+    Desc     = "Copy link on my TikTok",
+    Icon     = "copy",
+    Callback = function()
+        setclipboard("https://www.tiktok.com/@snowt.scripts?_t=ZT-8yhrbnIUFLL&_r=1")
+        WindUI:Notify({
+            Title   = "Link Copied",
+            Content = "TikTok link copied to clipboard",
+            Duration = 2
+        })
+    end
+})
+
+-- YouTube
+local YouTubeParagraph = SocialsTab:Paragraph({
+    Title     = gradient("YouTube", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc      = "Check out my YouTube channel",
+    Image     = "youtube",
+    ImageSize = 20,
+    Color     = "White"
+})
+
+SocialsTab:Button({
+    Title    = gradient("YouTube", COLOR_PALETTE.Primary, COLOR_PALETTE.Accent),
+    Desc     = "Copy link to my YouTube",
+    Icon     = "copy",
+    Callback = function()
+        setclipboard("https://youtube.com/@snowt_team?si=AmXDJj0qFQB-dzhv")
+        WindUI:Notify({
+            Title   = "Link Copied",
+            Content = "YouTube link copied to clipboard",
+            Duration = 2
+        })
+    end
+})
+
+-- Telegram
+local TelegramParagraph = SocialsTab:Paragraph({
+    Title     = gradient("Telegram", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc      = "Join my Telegram channel",
+    Image     = "send",
+    ImageSize = 20,
+    Color     = "White"
+})
+
+SocialsTab:Button({
+    Title    = gradient("Telegram", COLOR_PALETTE.Primary, COLOR_PALETTE.Accent),
+    Desc     = "Copy link to my Telegram",
+    Icon     = "copy",
+    Callback = function()
+        setclipboard("https://t.me/snowtscripts")
+        WindUI:Notify({
+            Title   = "Link Copied",
+            Content = "Telegram link copied to clipboard",
+            Duration = 2
+        })
+    end
+})
+
+
+-- ========================
+-- УЛУЧШЕННЫЙ CHARACTER TAB
+-- ========================
+
+-- Переменные
+local walkspeed = 16
+local jumpPower = 50
+local gravity = 196.2
+local WalkSpeedMode = false
+local JumpPowerMode = false
+local GravityMode = false
+local noclip = false
+local infiniteJump = false
+
+-- Функция обновления персонажа
+local function applyCharacterSettings()
+    local player = game:GetService("Players").LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        if WalkSpeedMode then humanoid.WalkSpeed = walkspeed end
+        if JumpPowerMode then humanoid.JumpPower = jumpPower end
+    end
+    if GravityMode then
+        game:GetService("Workspace").Gravity = gravity
+    else
+        game:GetService("Workspace").Gravity = 196.2
+    end
+end
+
+-- Автообновление при спавне
+game:GetService("Players").LocalPlayer.CharacterAdded:Connect(function()
+    wait(1) -- ждём прогрузку
+    applyCharacterSettings()
+end)
+
+-- WalkSpeed
+CharacterTab:Slider({
+    Title = gradient("WalkSpeed", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Default is 16",
+    Value = { Min = 0, Max = 200, Default = walkspeed },
+    Callback = function(value)
+        walkspeed = value
+        if WalkSpeedMode then applyCharacterSettings() end
+    end
+})
+
+CharacterTab:Toggle({
+    Title = gradient("Enable Walkspeed", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Value = WalkSpeedMode,
+    Callback = function(state)
+        WalkSpeedMode = state
+        applyCharacterSettings()
+    end
+})
+
+-- JumpPower
+CharacterTab:Slider({
+    Title = gradient("Jump Power", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Default is 50",
+    Value = { Min = 0, Max = 200, Default = jumpPower },
+    Callback = function(value)
+        jumpPower = value
+        if JumpPowerMode then applyCharacterSettings() end
+    end
+})
+
+CharacterTab:Toggle({
+    Title = gradient("Enable JumpPower", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Value = JumpPowerMode,
+    Callback = function(state)
+        JumpPowerMode = state
+        applyCharacterSettings()
+    end
+})
+
+-- Gravity
+CharacterTab:Slider({
+    Title = gradient("Gravity", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Default is 196.2",
+    Value = { Min = 0, Max = 500, Default = gravity },
+    Callback = function(value)
+        gravity = value
+        if GravityMode then applyCharacterSettings() end
+    end
+})
+
+CharacterTab:Toggle({
+    Title = gradient("Enable Gravity", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Value = GravityMode,
+    Callback = function(state)
+        GravityMode = state
+        applyCharacterSettings()
+    end
+})
+
+-- Noclip
+CharacterTab:Toggle({
+    Title = gradient("Noclip", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Value = noclip,
+    Callback = function(state)
+        noclip = state
+        if state then
+            _G.NoclipLoop = game:GetService("RunService").Stepped:Connect(function()
+                local char = game:GetService("Players").LocalPlayer.Character
+                if char then
+                    for _, part in pairs(char:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = false
+                        end
+                    end
+                end
+            end)
+        else
+            if _G.NoclipLoop then _G.NoclipLoop:Disconnect() end
+        end
+    end
+})
+
+-- Infinite Jump
+CharacterTab:Toggle({
+    Title = gradient("Infinite Jump", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Value = infiniteJump,
+    Callback = function(state)
+        infiniteJump = state
+        if state then
+            _G.InfiniteJumpConnection = game:GetService("UserInputService").JumpRequest:Connect(function()
+                local hum = game:GetService("Players").LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+                if hum then hum:ChangeState("Jumping") end
+            end)
+        else
+            if _G.InfiniteJumpConnection then _G.InfiniteJumpConnection:Disconnect() end
+        end
+    end
+})
+
+-- Сброс настроек
+CharacterTab:Button({
+    Title = gradient("Reset to Default", COLOR_PALETTE.Primary, COLOR_PALETTE.Accent),
+    Icon = "refresh-ccw",
+    Callback = function()
+        walkspeed, jumpPower, gravity = 16, 50, 196.2
+        WalkSpeedMode, JumpPowerMode, GravityMode, noclip, infiniteJump = false, false, false, false, false
+        applyCharacterSettings()
+        if _G.NoclipLoop then _G.NoclipLoop:Disconnect() end
+        if _G.InfiniteJumpConnection then _G.InfiniteJumpConnection:Disconnect() end
+        WindUI:Notify({ Title = "Reset Complete", Content = "All settings reset", Duration = 2 })
+    end
+})
+
+-- ============ Камера-ориентированный полёт без падения (PC + Mobile) ============
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local ContextActionService = game:GetService("ContextActionService")
+
+local flying = false
+local flySpeed = flySpeed or 50
+local ascendActive, descendActive = 0, 0
+local flightConn, bodyGyro, bodyVel
+
+-- Управление подъём/спуск
+local function bindFlightButtons()
+    ContextActionService:BindAction("SNT_Flight_Up", function(_, state)
+        ascendActive = (state == Enum.UserInputState.Begin) and 1 or 0
+        return Enum.ContextActionResult.Sink
+    end, true, Enum.KeyCode.Space, Enum.KeyCode.ButtonR2)
+
+    ContextActionService:SetTitle("SNT_Flight_Up", "UP")
+    ContextActionService:SetPosition("SNT_Flight_Up", UDim2.new(1, -80, 1, -160))
+
+    ContextActionService:BindAction("SNT_Flight_Down", function(_, state)
+        descendActive = (state == Enum.UserInputState.Begin) and 1 or 0
+        return Enum.ContextActionResult.Sink
+    end, true, Enum.KeyCode.LeftControl, Enum.KeyCode.C, Enum.KeyCode.ButtonL2)
+
+    ContextActionService:SetTitle("SNT_Flight_Down", "DOWN")
+    ContextActionService:SetPosition("SNT_Flight_Down", UDim2.new(1, -80, 1, -100))
+end
+
+local function unbindFlightButtons()
+    ContextActionService:UnbindAction("SNT_Flight_Up")
+    ContextActionService:UnbindAction("SNT_Flight_Down")
+    ascendActive, descendActive = 0, 0
+end
+
+-- Запуск
+function startFlying()
+    if flying then return end
+    flying = true
+
+    local plr = Players.LocalPlayer
+    local char = plr.Character or plr.CharacterAdded:Wait()
+    local hrp = char:WaitForChild("HumanoidRootPart")
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum then return end
+
+    hum.AutoRotate = false
+
+    bodyGyro = Instance.new("BodyGyro")
+    bodyGyro.P = 9e4
+    bodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+    bodyGyro.CFrame = hrp.CFrame
+    bodyGyro.Parent = hrp
+
+    bodyVel = Instance.new("BodyVelocity")
+    bodyVel.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+    bodyVel.Velocity = Vector3.zero
+    bodyVel.Parent = hrp
+
+    flightConn = RunService.Heartbeat:Connect(function()
+        local cam = workspace.CurrentCamera
+        local look = cam.CFrame.LookVector
+        local right = cam.CFrame.RightVector
+
+        -- Движение вперёд/назад и влево/вправо от Humanoid.MoveDirection
+        local move = hum.MoveDirection
+        local forwardAmt = move:Dot(Vector3.new(look.X, 0, look.Z).Unit)
+        local rightAmt   = move:Dot(Vector3.new(right.X, 0, right.Z).Unit)
+
+        -- Вертикаль напрямую от камеры: берём Y из LookVector при движении вперёд/назад
+        local verticalFromCamera = 0
+        if move.Magnitude > 0 then
+            verticalFromCamera = look.Y * forwardAmt
+        end
+
+        -- Итоговое направление (включая высоту от камеры)
+        local dir = (look * forwardAmt) + (right * rightAmt)
+        dir = Vector3.new(dir.X, verticalFromCamera, dir.Z)
+
+        if dir.Magnitude > 1 then dir = dir.Unit end
+        bodyVel.Velocity = dir * flySpeed
+
+        -- Поворот за камерой
+        bodyGyro.CFrame = CFrame.lookAt(hrp.Position, hrp.Position + look, cam.CFrame.UpVector)
+    end)
+end
+
+
+-- Остановка
+function stopFlying()
+    if not flying then return end
+    flying = false
+
+    unbindFlightButtons()
+    if flightConn then flightConn:Disconnect() flightConn = nil end
+    if bodyGyro then bodyGyro:Destroy() bodyGyro = nil end
+    if bodyVel then bodyVel:Destroy() bodyVel = nil end
+
+    local plr = Players.LocalPlayer
+    local char = plr.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if hum then hum.AutoRotate = true end
+end
+
+CharacterTab:Toggle({
+    Title = gradient("Fly", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Smooth camera-aligned flight (PC, Mobile, Gamepad)",
+    Value = false,
+    Callback = function(state)
+        if state then startFlying() else stopFlying() end
+    end
+})
+
+-- Слайдер скорости (оставь твой или этот):
+CharacterTab:Slider({
+    Title = gradient("Fly Speed", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Adjust flight speed",
+    Value = { Min = 5, Max = 150, Default = flySpeed },
+    Callback = function(v)
+        flySpeed = v
+    end
+})
+
+
+-- Кнопка переключения темы
+Window:CreateTopbarButton("theme-switcher", "moon", function()
+    WindUI:SetTheme(WindUI:GetCurrentTheme() == "Dark" and "Light" or "Dark")
+    WindUI:Notify({
+        Title = "Theme Changed",
+        Content = "Current theme: "..WindUI:GetCurrentTheme(),
+        Duration = 2
+    })
+end, 990)
+
+-- ========================
+-- TELEPORT TAB
+-- ========================
+
+
+
+-- ========================
+-- ENHANCED ESP SYSTEM (FIXED)
+-- ========================
+
+-- Добавляем цвета ESP
+local ESP_COLORS = {
+    Survivor = Color3.fromRGB(0, 255, 0),    -- Зеленый
+    Killer = Color3.fromRGB(255, 0, 0),      -- Красный
+    Medkit = Color3.fromRGB(0, 255, 0),      -- Зеленый
+    BloxyCola = Color3.fromRGB(88, 57, 39),  -- Коричневый
+    Generator = Color3.fromRGB(0, 191, 255)  -- Синий
+}
+
+-- Добавляем переменные
+local espSettings = {
+    SurvivorHighlight = false,
+    KillerHighlight = false,
+    ItemsHighlight = false,
+    GeneratorHighlight = false,
+    SurvivorNameESP = false,
+    KillerNameESP = false,
+    ItemsNameESP = false,
+    GeneratorNameESP = false,
+    SurvivorDistance = false,
+    KillerDistance = false,
+    ItemsDistance = false,
+    GeneratorDistance = false
+}
+
+local espConnections = {}
+local nameEspConnections = {}
+local distanceEspConnections = {}
+
+local function survivorHighlighter(state)
+    isSurvivorHighlightActive = state
+
+    local function applySurvivorHighlight(model)
+        if model:IsA("Model") and model:FindFirstChild("Head") then
+            local existingHighlight = model:FindFirstChild("SurvivorHighlight")
+            
+            if isSurvivorHighlightActive then
+                if not existingHighlight then
+                    local highlight = Instance.new("Highlight")
+                    highlight.Name = "SurvivorHighlight"
+                    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                    highlight.FillColor = ESP_COLORS.Survivor
+                    highlight.FillTransparency = 0.3
+                    highlight.OutlineColor = ESP_COLORS.Survivor
+                    highlight.Parent = model
+                end
+            else
+                if existingHighlight then
+                    existingHighlight:Destroy()
+                end
+            end
+        end
+    end
+
+    -- Обработка существующих survivors
+    local survivorsFolder = workspace.Players:FindFirstChild("Survivors")
+    if survivorsFolder then
+        for _, survivor in pairs(survivorsFolder:GetChildren()) do
+            if survivor:IsA("Model") then
+                applySurvivorHighlight(survivor)
+            end
+        end
+        
+        -- Слушатель новых survivors
+        if not espConnections.survivorAdded then
+            espConnections.survivorAdded = survivorsFolder.ChildAdded:Connect(function(child)
+                if child:IsA("Model") then
+                    applySurvivorHighlight(child)
+                end
+            end)
+        end
+    end
+end
+
+local function killerHighlighter(state)
+    isKillerHighlightActive = state
+
+    local function applyKillerHighlight(model)
+        if model:IsA("Model") and model:FindFirstChild("Head") then
+            local existingHighlight = model:FindFirstChild("KillerHighlight")
+            
+            if isKillerHighlightActive then
+                if not existingHighlight then
+                    local highlight = Instance.new("Highlight")
+                    highlight.Name = "KillerHighlight"
+                    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                    highlight.FillColor = ESP_COLORS.Killer
+                    highlight.FillTransparency = 0.3
+                    highlight.OutlineColor = ESP_COLORS.Killer
+                    highlight.Parent = model
+                end
+            else
+                if existingHighlight then
+                    existingHighlight:Destroy()
+                end
+            end
+        end
+    end
+
+    -- Обработка существующих killers
+    local killersFolder = workspace.Players:FindFirstChild("Killers")
+    if killersFolder then
+        for _, killer in pairs(killersFolder:GetChildren()) do
+            if killer:IsA("Model") then
+                applyKillerHighlight(killer)
+            end
+        end
+        
+        -- Слушатель новых killers
+        if not espConnections.killerAdded then
+            espConnections.killerAdded = killersFolder.ChildAdded:Connect(function(child)
+                if child:IsA("Model") then
+                    applyKillerHighlight(child)
+                end
+            end)
+        end
+    end
+end
+
+local function highlighttools(state)
+    isToolHighlightActive = state
+    
+    local function applyHighlight(tool)
+        if isToolHighlightActive then
+            local existingHighlight = tool:FindFirstChild("ToolHighlight")
+            if not existingHighlight then
+                local highlight = Instance.new("Highlight")
+                highlight.Name = "ToolHighlight"
+                highlight.Parent = tool
+                highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                highlight.FillTransparency = 0.2
+
+                if tool.Name == "Medkit" then
+                    highlight.FillColor = ESP_COLORS.Medkit
+                    highlight.OutlineColor = ESP_COLORS.Medkit
+                elseif tool.Name == "BloxyCola" then
+                    highlight.FillColor = ESP_COLORS.BloxyCola
+                    highlight.OutlineColor = ESP_COLORS.BloxyCola
+                else
+                    highlight.FillColor = Color3.fromRGB(255, 255, 0)
+                    highlight.OutlineColor = Color3.fromRGB(255, 255, 0)
+                end
+            end
+        else
+            local existingHighlight = tool:FindFirstChild("ToolHighlight")
+            if existingHighlight then
+                existingHighlight:Destroy()
+            end
+        end
+    end
+    
+    -- Обработка существующих предметов
+    local ingameFolder = workspace.Map:FindFirstChild("Ingame")
+    if ingameFolder then
+        for _, item in pairs(ingameFolder:GetChildren()) do
+            if item:IsA("Tool") then
+                applyHighlight(item)
+            end
+        end
+        
+        -- Слушатель новых предметов
+        if not espConnections.toolAdded then
+            espConnections.toolAdded = ingameFolder.ChildAdded:Connect(function(child)
+                if child:IsA("Tool") then
+                    applyHighlight(child)
+                end
+            end)
+        end
+    end
+end
+
+local function toggleHighlightGen(state)
+    isGeneratorHighlightActive = state 
+
+    local function applyGeneratorHighlight(generator)
+        if generator.Name == "Generator" then
+            local existingHighlight = generator:FindFirstChild("GeneratorHighlight")
+            
+            if isGeneratorHighlightActive then
+                if not existingHighlight then
+                    local highlight = Instance.new("Highlight")
+                    highlight.Name = "GeneratorHighlight"
+                    highlight.Parent = generator
+                    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                    highlight.FillColor = ESP_COLORS.Generator
+                    highlight.FillTransparency = 0.3
+                    highlight.OutlineColor = ESP_COLORS.Generator
+                end
+            else
+                if existingHighlight then
+                    existingHighlight:Destroy()
+                end
+            end
+        end
+    end
+
+    -- Обработка генераторов
+    local mapFolder = workspace.Map:FindFirstChild("Ingame")
+    if mapFolder then
+        local map = mapFolder:FindFirstChild("Map")
+        if map then
+            for _, generator in pairs(map:GetChildren()) do
+                if generator.Name == "Generator" then
+                    applyGeneratorHighlight(generator)
+                end
+            end
+            
+            -- Слушатель новых генераторов
+            if not espConnections.generatorAdded then
+                espConnections.generatorAdded = map.ChildAdded:Connect(function(child)
+                    if child.Name == "Generator" then
+                        applyGeneratorHighlight(child)
+                    end
+                end)
+            end
+        end
+    end
+end
+
+-- Безопасная функция получения папки
+local function getFolderSafe(parent, folderName)
+    return parent:FindFirstChild(folderName) or nil
+end
+
+-- Функция очистки всех highlight при отключении
+local function clearAllHighlights()
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Highlight") then
+            pcall(function() obj:Destroy() end)
+        end
+    end
+end
+
+-- Функция для переключения highlight с очисткой
+local function toggleHighlight(type, state)
+    if not state then
+        -- При отключении очищаем соответствующий highlight
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("Highlight") and obj.Name == type .. "Highlight" then
+                pcall(function() obj:Destroy() end)
+            end
+        end
+    end
+    
+    -- Вызываем соответствующую функцию
+    if type == "Survivor" then
+        survivorHighlighter(state)
+    elseif type == "Killer" then
+        killerHighlighter(state)
+    elseif type == "Tool" then
+        highlighttools(state)
+    elseif type == "Generator" then
+        toggleHighlightGen(state)
+    end
+end
+
+-- Упрощенная система обнаружения раундов
+local function setupRoundDetection()
+    -- Очищаем старые соединения
+    for _, conn in pairs(espConnections) do
+        if conn then
+            pcall(function() conn:Disconnect() end)
+        end
+    end
+    table.clear(espConnections)
+    
+    -- Периодическое обновление ESP
+    espConnections.heartbeat = game:GetService("RunService").Heartbeat:Connect(function()
+        updateAllESP()
+    end)
+end
+
+-- Функция создания текста ESP
+local function createESPLabel(text, color, parent, offset, espType)
+    if not parent or not parent.Parent then return nil end
+    
+    -- Сначала удаляем старый ESP если есть
+    local oldESP = parent:FindFirstChild(espType .. "ESP")
+    if oldESP then
+        oldESP:Destroy()
+    end
+    
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = espType .. "ESP"
+    billboard.Size = UDim2.new(0, 200, 0, 50)
+    billboard.StudsOffset = offset or Vector3.new(0, 2, 0)
+    billboard.AlwaysOnTop = true
+    billboard.Adornee = parent
+    billboard.Parent = parent
+    billboard.MaxDistance = 500
+    
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.Text = text
+    textLabel.TextColor3 = color
+    textLabel.TextStrokeTransparency = 0
+    textLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Font = Enum.Font.SourceSansBold
+    textLabel.TextSize = 14
+    textLabel.Parent = billboard
+    
+    return billboard
+end
+
+-- Функция расчета дистанции
+local function calculateDistance(position)
+    local localPlayer = game.Players.LocalPlayer
+    if localPlayer and localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        return math.floor((position - localPlayer.Character.HumanoidRootPart.Position).Magnitude)
+    end
+    return 0
+end
+
+-- Name ESP функции
+local function updateNameESP()
+    -- Очищаем старые Name ESP
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("BillboardGui") and obj.Name:find("NameESP") then
+            pcall(function() obj:Destroy() end)
+        end
+    end
+    
+    -- Survivors Name ESP
+    if espSettings.SurvivorNameESP then
+        local survivorsFolder = workspace.Players:FindFirstChild("Survivors")
+        if survivorsFolder then
+            for _, survivor in pairs(survivorsFolder:GetChildren()) do
+                if survivor:IsA("Model") and survivor:FindFirstChild("Head") then
+                    createESPLabel(survivor.Name, ESP_COLORS.Survivor, survivor.Head, Vector3.new(0, 2.5, 0), "SurvivorName")
+                end
+            end
+        end
+    end
+    
+    -- Killer Name ESP
+    if espSettings.KillerNameESP then
+        local killersFolder = workspace.Players:FindFirstChild("Killers")
+        if killersFolder then
+            for _, killer in pairs(killersFolder:GetChildren()) do
+                if killer:IsA("Model") and killer:FindFirstChild("Head") then
+                    createESPLabel(killer.Name, ESP_COLORS.Killer, killer.Head, Vector3.new(0, 2.5, 0), "KillerName")
+                end
+            end
+        end
+    end
+    
+    -- Items Name ESP
+    if espSettings.ItemsNameESP then
+        local ingameFolder = workspace.Map:FindFirstChild("Ingame")
+        if ingameFolder then
+            for _, item in pairs(ingameFolder:GetChildren()) do
+                if item:IsA("Tool") and (item.Name == "Medkit" or item.Name == "BloxyCola") then
+                    createESPLabel(item.Name, item.Name == "Medkit" and ESP_COLORS.Medkit or ESP_COLORS.BloxyCola, item, Vector3.new(0, 1, 0), "ItemsName")
+                end
+            end
+        end
+    end
+    
+    -- Generator Name ESP
+    if espSettings.GeneratorNameESP then
+        local mapFolder = workspace.Map:FindFirstChild("Ingame")
+        if mapFolder then
+            local map = mapFolder:FindFirstChild("Map")
+            if map then
+                for _, generator in pairs(map:GetChildren()) do
+                    if generator.Name == "Generator" then
+                        createESPLabel("Generator", ESP_COLORS.Generator, generator, Vector3.new(0, 3, 0), "GeneratorName")
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- Distance ESP функции
+local function updateDistanceESP()
+    -- Очищаем старые Distance ESP
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("BillboardGui") and obj.Name:find("DistanceESP") then
+            pcall(function() obj:Destroy() end)
+        end
+    end
+    
+    -- Survivors Distance ESP
+    if espSettings.SurvivorDistance then
+        local survivorsFolder = workspace.Players:FindFirstChild("Survivors")
+        if survivorsFolder then
+            for _, survivor in pairs(survivorsFolder:GetChildren()) do
+                if survivor:IsA("Model") and survivor:FindFirstChild("HumanoidRootPart") then
+                    local distance = calculateDistance(survivor.HumanoidRootPart.Position)
+                    createESPLabel(distance .. "m", ESP_COLORS.Survivor, survivor.HumanoidRootPart, Vector3.new(0, 3, 0), "SurvivorDistance")
+                end
+            end
+        end
+    end
+    
+    -- Killer Distance ESP
+    if espSettings.KillerDistance then
+        local killersFolder = workspace.Players:FindFirstChild("Killers")
+        if killersFolder then
+            for _, killer in pairs(killersFolder:GetChildren()) do
+                if killer:IsA("Model") and killer:FindFirstChild("HumanoidRootPart") then
+                    local distance = calculateDistance(killer.HumanoidRootPart.Position)
+                    createESPLabel(distance .. "m", ESP_COLORS.Killer, killer.HumanoidRootPart, Vector3.new(0, 3, 0), "KillerDistance")
+                end
+            end
+        end
+    end
+    
+    -- Items Distance ESP
+    if espSettings.ItemsDistance then
+        local ingameFolder = workspace.Map:FindFirstChild("Ingame")
+        if ingameFolder then
+            for _, item in pairs(ingameFolder:GetChildren()) do
+                if item:IsA("Tool") and (item.Name == "Medkit" or item.Name == "BloxyCola") then
+                    local distance = calculateDistance(item.Position)
+                    createESPLabel(distance .. "m", item.Name == "Medkit" and ESP_COLORS.Medkit or ESP_COLORS.BloxyCola, item, Vector3.new(0, 1.5, 0), "ItemsDistance")
+                end
+            end
+        end
+    end
+    
+    -- Generator Distance ESP
+    if espSettings.GeneratorDistance then
+        local mapFolder = workspace.Map:FindFirstChild("Ingame")
+        if mapFolder then
+            local map = mapFolder:FindFirstChild("Map")
+            if map then
+                for _, generator in pairs(map:GetChildren()) do
+                    if generator.Name == "Generator" then
+                        local distance = calculateDistance(generator.Position)
+                        createESPLabel(distance .. "m", ESP_COLORS.Generator, generator, Vector3.new(0, 3.5, 0), "GeneratorDistance")
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- Функция обновления всего ESP
+local function updateAllESP()
+    -- Обновляем Name ESP
+    if espSettings.SurvivorNameESP or espSettings.KillerNameESP or 
+       espSettings.ItemsNameESP or espSettings.GeneratorNameESP then
+        updateNameESP()
+    end
+    
+    -- Обновляем Distance ESP
+    if espSettings.SurvivorDistance or espSettings.KillerDistance or 
+       espSettings.ItemsDistance or espSettings.GeneratorDistance then
+        updateDistanceESP()
+    end
+end
+
+-- Функция очистки всего ESP
+local function clearAllESP()
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("BillboardGui") and obj.Name:find("ESP") then
+            pcall(function() obj:Destroy() end)
+        end
+    end
+end
+
+-- Запускаем детектор раундов в отдельном потоке
+task.spawn(function()
+    setupRoundDetection()
+end)
+
+-- Функция для переключения ESP
+local function toggleESP(settingName, state)
+    espSettings[settingName] = state
+    updateAllESP()
+end
+
+-- ========================
+-- ESP TAB ELEMENTS
+-- ========================
+
+EspTab:Divider({ Title = gradient("HIGHLIGHT ESP", COLOR_PALETTE.Primary, COLOR_PALETTE.Text) })
+
+EspTab:Toggle({
+    Title = gradient("Highlight Survivors", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Visual highlight of survivors",
+    Value = false,
+    Icon = "user",
+    Callback = function(state)
+        toggleHighlight("Survivor", state)
+        WindUI:Notify({
+            Title = "Survivor Highlight",
+            Content = state and "Enabled" or "Disabled",
+            Duration = 2
+        })
+    end
+})
+
+EspTab:Toggle({
+    Title = gradient("Highlight Killer", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Visual highlight of the killer",
+    Value = false,
+    Icon = "skull",
+    Callback = function(state)
+        toggleHighlight("Killer", state)
+        WindUI:Notify({
+            Title = "Killer Highlight",
+            Content = state and "Enabled" or "Disabled",
+            Duration = 2
+        })
+    end
+})
+
+EspTab:Toggle({
+    Title = gradient("Highlight Items", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Visual highlight of items (Medkits, BloxyCola)",
+    Value = false,
+    Icon = "package",
+    Callback = function(state)
+        toggleHighlight("Tool", state)
+        WindUI:Notify({
+            Title = "Items Highlight",
+            Content = state and "Enabled" or "Disabled",
+            Duration = 2
+        })
+    end
+})
+
+EspTab:Toggle({
+    Title = gradient("Highlight Generators", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Visual highlight of generators",
+    Value = false,
+    Icon = "zap",
+    Callback = function(state)
+        toggleHighlight("Generator", state)
+        WindUI:Notify({
+            Title = "Generator Highlight",
+            Content = state and "Enabled" or "Disabled",
+            Duration = 2
+        })
+    end
+})
+
+EspTab:Divider({ Title = gradient("NAME ESP", COLOR_PALETTE.Primary, COLOR_PALETTE.Text) })
+
+EspTab:Toggle({
+    Title = gradient("Survivors Name ESP", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Display names above survivors",
+    Value = false,
+    Icon = "tag",
+    Callback = function(state)
+        toggleESP("SurvivorNameESP", state)
+        WindUI:Notify({
+            Title = "Survivor Name ESP",
+            Content = state and "Enabled" or "Disabled",
+            Duration = 2
+        })
+    end
+})
+
+EspTab:Toggle({
+    Title = gradient("Killer Name ESP", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Display name above the killer", 
+    Value = false,
+    Icon = "axe",
+    Callback = function(state)
+        toggleESP("KillerNameESP", state)
+        WindUI:Notify({
+            Title = "Killer Name ESP",
+            Content = state and "Enabled" or "Disabled",
+            Duration = 2
+        })
+    end
+})
+
+EspTab:Toggle({
+    Title = gradient("Items Name ESP", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Display names above items",
+    Value = false,
+    Icon = "tag",
+    Callback = function(state)
+        toggleESP("ItemsNameESP", state)
+        WindUI:Notify({
+            Title = "Items Name ESP",
+            Content = state and "Enabled" or "Disabled",
+            Duration = 2
+        })
+    end
+})
+
+EspTab:Toggle({
+    Title = gradient("Generators Name ESP", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Display names above generators",
+    Value = false,
+    Icon = "tag",
+    Callback = function(state)
+        toggleESP("GeneratorNameESP", state)
+        WindUI:Notify({
+            Title = "Generator Name ESP",
+            Content = state and "Enabled" or "Disabled",
+            Duration = 2
+        })
+    end
+})
+
+EspTab:Divider({ Title = gradient("DISTANCE ESP", COLOR_PALETTE.Primary, COLOR_PALETTE.Text) })
+
+EspTab:Toggle({
+    Title = gradient("Survivors Distance ESP", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Display distance to survivors",
+    Value = false,
+    Icon = "navigation",
+    Callback = function(state)
+        toggleESP("SurvivorDistance", state)
+        WindUI:Notify({
+            Title = "Survivor Distance ESP",
+            Content = state and "Enabled" or "Disabled",
+            Duration = 2
+        })
+    end
+})
+
+EspTab:Toggle({
+    Title = gradient("Killer Distance ESP", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Display distance to the killer",
+    Value = false,
+    Icon = "navigation",
+    Callback = function(state)
+        toggleESP("KillerDistance", state)
+        WindUI:Notify({
+            Title = "Killer Distance ESP",
+            Content = state and "Enabled" or "Disabled",
+            Duration = 2
+        })
+    end
+})
+
+EspTab:Toggle({
+    Title = gradient("Items Distance ESP", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Display distance to items",
+    Value = false,
+    Icon = "navigation",
+    Callback = function(state)
+        toggleESP("ItemsDistance", state)
+        WindUI:Notify({
+            Title = "Items Distance ESP",
+            Content = state and "Enabled" or "Disabled",
+            Duration = 2
+        })
+    end
+})
+
+EspTab:Toggle({
+    Title = gradient("Generators Distance ESP", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Display distance to generators",
+    Value = false,
+    Icon = "navigation",
+    Callback = function(state)
+        toggleESP("GeneratorDistance", state)
+        WindUI:Notify({
+            Title = "Generator Distance ESP",
+            Content = state and "Enabled" or "Disabled",
+            Duration = 2
+        })
+    end
+})
+
+EspTab:Divider({ Title = gradient("UTILITIES", COLOR_PALETTE.Primary, COLOR_PALETTE.Text) })
+
+EspTab:Button({
+    Title = gradient("Refresh All ESP", COLOR_PALETTE.Primary, COLOR_PALETTE.Accent),
+    Desc = "Force update all ESP elements",
+    Icon = "refresh-cw",
+    Callback = function()
+        updateAllESP()
+        WindUI:Notify({
+            Title = "ESP Refreshed",
+            Content = "All ESP elements updated",
+            Duration = 2
+        })
+    end
+})
+
+EspTab:Button({
+    Title = gradient("Clear All ESP", COLOR_PALETTE.Primary, COLOR_PALETTE.Accent),
+    Desc = "Remove all ESP elements",
+    Icon = "trash-2",
+    Callback = function()
+        clearAllESP()
+        clearAllHighlights()
+        
+        -- Сбрасываем все настройки
+        for setting in pairs(espSettings) do
+            espSettings[setting] = false
+        end
+        
+        -- Отключаем все соединения
+        for _, conn in pairs(espConnections) do
+            if conn then
+                pcall(function() conn:Disconnect() end)
+            end
+        end
+        table.clear(espConnections)
+        
+        WindUI:Notify({
+            Title = "ESP Cleared",
+            Content = "All ESP removed and settings reset",
+            Duration = 2
+        })
+    end
+})
+
+EspTab:Button({
+    Title = gradient("Enable All ESP", COLOR_PALETTE.Primary, COLOR_PALETTE.Accent),
+    Desc = "Enable all ESP features",
+    Icon = "eye",
+    Callback = function()
+        -- Включаем все настройки ESP
+        for setting in pairs(espSettings) do
+            espSettings[setting] = true
+        end
+        
+        -- Включаем все highlight
+        toggleHighlight("Survivor", true)
+        toggleHighlight("Killer", true)
+        toggleHighlight("Tool", true)
+        toggleHighlight("Generator", true)
+        
+        -- Обновляем ESP
+        updateAllESP()
+        
+        WindUI:Notify({
+            Title = "All ESP Enabled",
+            Content = "All ESP features activated",
+            Duration = 3
+        })
+    end
+})
+
+EspTab:Button({
+    Title = gradient("Disable All ESP", COLOR_PALETTE.Primary, COLOR_PALETTE.Accent),
+    Desc = "Disable all ESP features",
+    Icon = "eye-off",
+    Callback = function()
+        -- Отключаем все настройки ESP
+        for setting in pairs(espSettings) do
+            espSettings[setting] = false
+        end
+        
+        -- Отключаем все highlight
+        toggleHighlight("Survivor", false)
+        toggleHighlight("Killer", false)
+        toggleHighlight("Tool", false)
+        toggleHighlight("Generator", false)
+        
+        -- Очищаем ESP
+        clearAllESP()
+        clearAllHighlights()
+        
+        WindUI:Notify({
+            Title = "All ESP Disabled",
+            Content = "All ESP features deactivated",
+            Duration = 3
+        })
+    end
+})
+
+-- Добавляем информацию о цветах
+EspTab:Divider({ Title = gradient("COLOR LEGEND", COLOR_PALETTE.Primary, COLOR_PALETTE.Text) })
+
+EspTab:Paragraph({
+    Title = gradient("Color Codes", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Survivors: Green\nKiller: Red\nMedkit: Green\nBloxyCola: Brown\nGenerators: Blue",
+    Image = "palette",
+    ImageSize = 20,
+    Color = "White"
+})
+
+-- ========================
+-- AUTOFARM TAB
+-- ========================
+
+-- Функция авто-починки генераторов
+local function autogen(state)
+    runAutoGen = state
+    
+    while runAutoGen do
+        task.wait()
+        for _, v in pairs(game.Workspace.Map.Ingame.Map:GetChildren()) do
+            if v.Name == "Generator" then
+                if not autoGenDebounce[v] then
+                    autoGenDebounce[v] = true
+                    -- Используем RemoteEvent из самого генератора
+                    v:WaitForChild("Remotes"):WaitForChild("RE"):FireServer()
+                    task.delay(autoGenDelay, function() 
+                        autoGenDebounce[v] = nil 
+                    end)
+                end
+            end
+        end
+    end
+end
+
+-- Функция для установки задержки
+local function setAutoGenDelay(value)
+    autoGenDelay = value
+end
+
+-- Функция моментальной починки всех генераторов
+local function instantsolvegen()
+    for _, v in pairs(game.Workspace.Map.Ingame.Map:GetChildren()) do
+        if v.Name == "Generator" then
+            local num = 0
+            repeat
+                num += 1
+                v:WaitForChild("Remotes"):WaitForChild("RE"):FireServer()
+            until num == 4
+        end
+    end
+end
+
+-- Функция починки одного состояния генератора
+local function solvegen()
+    for _, v in pairs(game.Workspace.Map.Ingame.Map:GetChildren()) do
+        if v.Name == "Generator" then
+            v:WaitForChild("Remotes"):WaitForChild("RE"):FireServer()
+        end
+    end
+end
+
+-- Добавляем элементы в AutoFarmTab
+AutoFarmTab:Toggle({
+    Title = gradient("Auto Generator", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Auto repairing generators",
+    Value = false,
+    Callback = function(state)
+        autogen(state)
+        WindUI:Notify({
+            Title = "Auto Generator",
+            Content = state and "Включено" or "Выключено",
+            Duration = 2
+        })
+    end
+})
+
+AutoFarmTab:Slider({
+    Title = gradient("Delay", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Changing auto generator delay",
+    Value = { Min = 0.1, Max = 10, Default = autoGenDelay },
+    Callback = function(value)
+        setAutoGenDelay(value)
+        WindUI:Notify({
+            Title = "Delay changed",
+            Content = "Updated delay: " .. value .. " sec",
+            Duration = 2
+        })
+    end
+})
+
+AutoFarmTab:Keybind({
+    Title = gradient("Quick Repair Key", COLOR_PALETTE.Primary, COLOR_PALETTE.Text),
+    Desc = "Быстрая починка генераторов",
+    Key = Enum.KeyCode.H,
+    Callback = function()
+        solvegen()
+        WindUI:Notify({
+            Title = "Быстрая починка",
+            Content = "Активирована ручная починка",
+            Duration = 1
+        })
+    end
+})
